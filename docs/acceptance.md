@@ -20,7 +20,9 @@ yet been supplied for this acceptance run. No paid model inference was performed
 | Real IteraCompute inference | Pending dedicated test key | Text, streaming, tool round trips, permissions and each real client must be run with the supplied key |
 | Python formatting/static checks | Passed | Ruff check and format |
 | Python artifacts | Passed | sdist/wheel built; clean wheel installation, CLI and pinned resources verified |
-| GitHub governance | Passed | Public repo, Issues/Discussions enabled; protected main requires administrator CODEOWNER review, CI and resolved conversations |
+| GitHub review protection | Enforced | Public repo, Issues/Discussions enabled; protected main requires administrator CODEOWNER review, CI and resolved conversations |
+| Initial review ownership | Pending administrator setup | Proposed CODEOWNERS includes both existing repo admins. Base main still lists only the PR author; GitHub forbids author self-approval |
+| GitHub Actions execution | Blocked by organization policy | Repo-level enablement returned a conflict; current CLI lacks organization-settings scope and browser requires sign-in. No GitHub CI result is claimed |
 
 Pinned Magpie engine: **v0.1.4314**, Linux x64 SHA-256
 `b1d88d7afd5e211d8992273e906455c11ea84cac31e764d47af20ac4d0a25339`.
@@ -39,7 +41,7 @@ termination checks, vendor/local credential separation, and checksum failure pre
 existing binary. Native smoke success requires an actual assistant reply, not a prompt echoed
 in logs. API tool round trips do not stand in for each native client's real tool-execution loop.
 
-GitHub CI additionally runs the fixture suite on Linux/macOS/Windows with Python 3.11 and 3.14,
+The supplied GitHub CI workflow is configured for Linux/macOS/Windows with Python 3.11 and 3.14,
 builds the package, and downloads/verifies the pinned Magpie for the real-engine fixture tests.
-Its current results are shown on the PR; local Linux evidence alone does not establish the other
+After Actions is enabled, results will appear on the PR. Local Linux evidence does not establish the other
 operating systems' result. Follow [testing.md](testing.md) for the remaining test-key acceptance.

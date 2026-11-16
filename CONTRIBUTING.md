@@ -13,7 +13,11 @@ and the `checks` CI status. Stale reviews are dismissed. Administrators are subj
 Force pushes and deletion of `main` are disabled. CI runs untrusted contributions with read-only
 repository access and no provider secrets. Automated merge is disabled.
 
-The initial administrator is `@K-3-LT`. Additional administrators can be added to CODEOWNERS
+The repository administrators are `@K-3-LT` and `@aikevan`; both are proposed as CODEOWNERS in
+the initial implementation PR. Additional administrators can be added to CODEOWNERS
 through the same reviewed workflow; reviewers must have write access for GitHub to recognize
 their code-owner approval. Authors cannot approve their own pull requests. Never bypass the
 review requirement to resolve this: arrange a separate administrator/reviewer account.
+
+See [governance setup](docs/governance.md) for the initial base-branch ownership and organization
+Actions restrictions. Until those are resolved, the initial PR intentionally remains blocked.

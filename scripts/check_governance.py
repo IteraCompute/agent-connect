@@ -1,5 +1,6 @@
 """Read-only audit of repository visibility and administrator review enforcement."""
 
+import base64
 import json
 import subprocess
 
@@ -14,6 +15,9 @@ def main():
     metadata = api("repos/" + repo)
     protection = api("repos/" + repo + "/branches/main/protection")
     reviews = protection["required_pull_request_reviews"]
+    owners = base64.b64decode(
+        api("repos/" + repo + "/contents/.github/CODEOWNERS?ref=main")["content"]
+    ).decode()
     checks = {
         "public": metadata["visibility"] == "public",
         "issues": metadata["has_issues"],
@@ -32,6 +36,12 @@ def main():
             "permission"
         ]
         == "admin",
+        "independent_admin_is_admin": api("repos/" + repo + "/collaborators/aikevan/permission")[
+            "permission"
+        ]
+        == "admin",
+        "base_codeowners_include_independent_admin": "@aikevan" in owners,
+        "actions_enabled": api("repos/" + repo + "/actions/permissions")["enabled"],
     }
     print(json.dumps(checks, indent=2))
     return 0 if all(checks.values()) else 1
