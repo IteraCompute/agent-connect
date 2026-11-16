@@ -1,3 +1,5 @@
 include LICENSE THIRD_PARTY_NOTICES README.en.md CONTRIBUTING.md SECURITY.md requirements-dev.txt
+include start.py Start.command Start.bat config.example.toml
 recursive-include docs *.md
+recursive-include docs/images *.jpg
 recursive-include tests *.py

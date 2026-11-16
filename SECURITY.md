@@ -4,7 +4,13 @@ Report vulnerabilities privately using GitHub's **Report a vulnerability** featu
 repository's Security page. Do not publish API keys or exploit details in public issues.
 
 Agent Connect is an authenticated, loopback-only desktop relay. Provider keys are environment
-references and never placed in generated agent configs, Magpie entries or command-line arguments.
+references in advanced mode, or an ignored owner-only local TOML file in the simple app. Runtime
+profiles use environment references in both modes. Vendor keys are never placed in generated
+agent configs, Magpie entries or command-line arguments. The UI never returns stored vendor keys.
+Its per-launch control token is carried in the launch URL fragment, then session storage; API
+operations require it plus matching Host/Origin. It serves only local packaged assets with a
+restrictive CSP. Do not share the launch URL. Native configuration backups may contain your
+previous client credentials; backups are private and must not be uploaded either.
 Generated import links and native fragments may contain a local relay key: protect them as credentials.
 The local key can make requests with the providers available to the relay; rotate it and resync
 Magpie/reimport client configs if it is disclosed. Magpie's loopback gateway uses its own documented

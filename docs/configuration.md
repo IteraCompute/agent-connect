@@ -1,9 +1,66 @@
 # Configuration
 
+## Simple local app
+
+`python3 start.py` reads `agent-connect.local.toml` beside the launcher and creates it if absent.
+Only `api_key` needs to be filled. The file is ignored by Git, atomically saved with mode 0600
+on POSIX, and never returned by the management API. On Windows use a private user directory/ACL.
+An empty key input preserves an existing key; edit the file to clear it. Click Reload after file edits.
+The app does not fall back to inherited vendor credentials. No inference runs automatically.
+
+```toml
+selected_provider = "iteracompute"
+client = "claude"
+
+[providers.iteracompute]
+name = "IteraCompute"
+api_key = ""
+base_url = "https://api.iteracompute.com"
+model = "openai/gpt-6-luna"
+protocols = ["chat", "responses", "anthropic"]
+```
+
+Add providers in the UI or as more `[providers.<id>]` tables. The simple app requires a nonempty
+key before connection/testing; use a harmless placeholder such as `local` for keyless loopback
+servers. Root bases derive `/v1` for Chat/Responses and `/v1beta` for Gemini; an existing `/v1`
+suffix is preserved for OpenAI protocols and stripped for Messages. For nonstandard paths,
+override any supported protocol explicitly:
+
+```toml
+[providers.iteracompute.endpoints]
+chat = "https://api.iteracompute.com/v1"
+responses = "https://api.iteracompute.com/v1"
+anthropic = "https://api.iteracompute.com"
+```
+
+The app runs its relay on 18423 and management panel on 18424, loopback only. Use
+`python3 start.py --port 18434 --relay-port 18433` to change them. Reconnect native clients after
+changing the relay port. Installed packages can use `itera-connect app --settings /path/private.toml`.
+Private runtime provider keys use generated environment names; they are not persisted in config.json.
+
+The independent native adapters honor `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `WORKBUDDY_CONFIG_DIR`,
+`WORKBUDDY_AI_CONFIG_DIR`, `OPENCLAW_STATE_DIR` / `OPENCLAW_CONFIG_PATH`, and `HERMES_HOME`.
+Defaults are `~/.claude/settings.json`, `~/.codex/config.toml`, `~/.workbuddy/models.json`,
+`~/.workbuddy-ai/models.json`, `~/.openclaw/openclaw.json` and `~/.hermes/config.yaml`.
+Original contents and the installed content hash are journaled under `native-backups` in the
+Agent Connect state directory. Restore only proceeds if the file still matches the known
+applied/transaction state. Existing unrelated JSON fields and TOML/YAML settings are preserved.
+Unsupported complex formats fail without rewriting the client file. Project settings and
+process environment may override user settings; restart and test a fresh session.
+
+Codex's persistent adapter uses `experimental_bearer_token` for the **local relay token only**,
+so terminals do not need a manual key export. Real provider keys remain exclusively in the relay.
+Hermes uses a named custom provider and explicit Chat transport. OpenClaw's existing model
+allowlist is extended to include the connected model. WorkBuddy keeps existing models and adds
+the provider-prefixed model, then requires a task-picker selection after restart.
+
+## Advanced JSON/environment configuration
+
 `itera-connect init` creates `$ITERACONNECT_HOME/config.json`, or
 `${XDG_CONFIG_HOME:-~/.config}/iteraconnect/config.json` by default. Files are replaced
 atomically with owner-only permissions on POSIX. Windows users should restrict the containing
-folder's ACL to their account. Native app backups remain managed by Magpie/CC Switch.
+folder's ACL to their account. In this advanced mode, native app backups remain managed by
+Magpie/CC Switch. This configuration is independent of the simple app's private TOML.
 
 ```json
 {
@@ -86,5 +143,5 @@ documented opt-out environment variables. Other upstream network behavior follow
 It refuses to overwrite files. Claude and WorkBuddy fragments hold only the local relay key.
 Codex/OpenClaw fragments reference `ITERACONNECT_GATEWAY_KEY`: export the contents of the local
 `gateway.key` in the client process first, or use `run`/`connect` to supply it automatically.
-Exports are optional; the preferred path is Magpie's native adapter, which preserves comments,
+Exports are optional; in advanced mode use Magpie's native adapter, which preserves comments,
 unrelated settings, profile behavior, model metadata and restoration state.

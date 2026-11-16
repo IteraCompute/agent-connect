@@ -18,6 +18,19 @@ from .launch import launch_args
 def reply_received(target, stdout):
     if target == "claude":
         return stdout.strip() == "ITERACONNECT_OK"
+    if target == "hermes":
+        try:
+            events = [json.loads(line) for line in stdout.splitlines() if line.strip()]
+            return any(
+                isinstance(event, dict)
+                and event.get("type") == "result"
+                and event.get("exit_code") == 0
+                and not event.get("error")
+                and event.get("text", "").strip() == "ITERACONNECT_OK"
+                for event in events
+            )
+        except (ValueError, TypeError, AttributeError):
+            return False
     if target == "codex":
         events = []
         try:
@@ -81,8 +94,10 @@ def sandbox_env(home: Path) -> dict:
     return env
 
 
-def smoke(config, target, pid, model=None, via="gateway", timeout=90):
-    if target not in ("claude", "codex", "openclaw"):
+def smoke(config, target, pid, model=None, via="gateway", timeout=90, native=False):
+    if target not in ("claude", "codex", "openclaw", "hermes") or (
+        target == "hermes" and via != "gateway"
+    ):
         return {
             "kind": "native-client",
             "target": target,
@@ -122,6 +137,39 @@ def smoke(config, target, pid, model=None, via="gateway", timeout=90):
                 "ITERACONNECT_SESSION_KEY",
             )
             env.update({k: routed[k] for k in names if k in routed})
+            if native:
+                from .native import render_native
+
+                folder = Path(env["CLAUDE_CONFIG_DIR" if target == "claude" else "CODEX_HOME"])
+                path = folder / ("settings.json" if target == "claude" else "config.toml")
+                path.write_text(render_native(target, "", config, pid, selected))
+                if target == "claude":
+                    args[args.index("--setting-sources") + 1] = "user"
+                command = [target, *args]
+                for name in names:
+                    env.pop(name, None)
+        elif target == "hermes":
+            from .native import render_native
+
+            seed = {
+                "platform_toolsets": {"cli": []},
+                "agent": {"max_turns": 1},
+                "memory": {"memory_enabled": False, "user_profile_enabled": False},
+            }
+            path = Path(env["HERMES_HOME"]) / "config.yaml"
+            path.write_text(render_native(target, json.dumps(seed), config, pid, selected))
+            command = [
+                target,
+                "--ignore-rules",
+                "chat",
+                "--quiet",
+                "--format",
+                "stream-json",
+                "--max-turns",
+                "1",
+                "-q",
+                PROMPT,
+            ]
         else:
             root, key = gateway_url(config, pid), gateway_key()
             api_base = root + "/v1"
@@ -164,6 +212,10 @@ def smoke(config, target, pid, model=None, via="gateway", timeout=90):
             path = Path(env["OPENCLAW_CONFIG_PATH"])
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps(data))
+            if native:
+                from .native import render_native
+
+                path.write_text(render_native(target, path.read_text(), config, pid, selected))
             command = [
                 target,
                 "agent",
@@ -208,3 +260,16 @@ def smoke(config, target, pid, model=None, via="gateway", timeout=90):
                 "detail": "client timed out",
                 "seconds": round(time.monotonic() - start, 3),
             }
+        finally:
+            if target == "hermes":
+                # Hermes one-shot starts a profile gateway. Stop only this temporary profile's gateway.
+                try:
+                    subprocess.run(
+                        [target, "gateway", "stop"],
+                        env=env,
+                        cwd=home,
+                        capture_output=True,
+                        timeout=15,
+                    )
+                except (OSError, subprocess.TimeoutExpired):
+                    pass

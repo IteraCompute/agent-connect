@@ -1,5 +1,16 @@
 # Upstream and downstream coverage
 
+## Independent simple client
+
+`python3 start.py` uses original UI, settings, native adapters and the relay. It needs no upstream
+binary. API switching, custom native endpoints, model discovery, connect/restore and API/client
+tests are available in one local interface. Six client entries cover Claude Code, Codex,
+WorkBuddy, WorkBuddy AI, OpenClaw and Hermes. Config adaptation is separate from actual app
+inference verification; see acceptance.md. Protocol conversion, subscription login, upstream
+plugins and additional clients remain in the optional advanced interfaces below.
+
+## Optional upstream composition
+
 Composition keeps upstream capabilities available through their own supported interfaces.
 It does not claim every upstream feature has been retested against every IteraCompute model.
 Source revisions and the Magpie release artifacts are pinned in

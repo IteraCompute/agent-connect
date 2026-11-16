@@ -161,7 +161,10 @@ def tool_roundtrip(protocol, url, key, model, budget, timeout):
             }
         ]
         p["tool_choice"] = {"type": "tool", "name": TOOL["name"]}
-    first = send(url, key, protocol, p, timeout)
+    try:
+        first = send(url, key, protocol, p, timeout)
+    except ConnectError as e:
+        raise ConnectError("Tool call request failed: " + str(e)) from None
     try:
         if protocol == "chat":
             message = first["choices"][0]["message"]
@@ -212,7 +215,10 @@ def tool_roundtrip(protocol, url, key, model, budget, timeout):
     except (KeyError, IndexError, TypeError, ValueError):
         raise ConnectError("Provider did not return a valid tool call") from None
     p.pop("tool_choice", None)
-    check_text(protocol, send(url, key, protocol, p, timeout))
+    try:
+        check_text(protocol, send(url, key, protocol, p, timeout))
+    except ConnectError as e:
+        raise ConnectError("Tool result request failed: " + str(e)) from None
 
 
 def probe(config, pid, model=None, via="gateway", protocols=None, budget=256, tools=True):

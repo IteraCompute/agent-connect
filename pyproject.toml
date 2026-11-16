@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "iteracompute-agent-connect"
 version = "0.1.0"
-description = "Connect any model provider to coding harnesses and agents with CC Switch and Magpie"
+description = "A simple local client to connect model APIs to coding harnesses and agents"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
@@ -24,7 +24,7 @@ Issues = "https://github.com/IteraCompute/agent-connect/issues"
 where = ["src"]
 
 [tool.setuptools.package-data]
-iteraconnect = ["upstreams.lock.json", "upstream-notices.txt"]
+iteraconnect = ["upstreams.lock.json", "upstream-notices.txt", "web/*.html", "web/*.css", "web/*.js"]
 
 [tool.ruff]
 target-version = "py311"

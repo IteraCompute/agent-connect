@@ -30,13 +30,18 @@ from .smoke import smoke
 
 def parser():
     p = argparse.ArgumentParser(
-        prog="itera-connect", description="IteraCompute + CC Switch + Magpie"
+        prog="itera-connect", description="Agent Connect · 选择 API，连接客户端"
     )
     p.add_argument("--version", action="version", version=__version__)
     p.add_argument(
         "--config", type=Path, help="Agent Connect config.json; credentials are env references"
     )
     sub = p.add_subparsers(dest="command", required=True)
+    app = sub.add_parser("app", help="打开独立的本地客户端界面（不需要 Magpie 或 CC Switch）")
+    app.add_argument("--settings", type=Path, default=Path("agent-connect.local.toml"))
+    app.add_argument("--port", type=int, default=18424)
+    app.add_argument("--relay-port", type=int, default=18423)
+    app.add_argument("--no-browser", action="store_true")
     sub.add_parser("init", help="Write the default IteraCompute profile if no config exists")
     providers = sub.add_parser("provider", help="Choose IteraCompute or any other API provider")
     actions = providers.add_subparsers(dest="action", required=True)
@@ -160,6 +165,11 @@ def output(value, path=None):
 
 
 def dispatch(args, trailing):
+    if args.command == "app":
+        from .app import serve_app
+
+        serve_app(args.settings, args.port, args.relay_port, not args.no_browser)
+        return 0
     config = load(args.config)
     command = args.command
     pid = getattr(args, "provider", None) or config["active_provider"]

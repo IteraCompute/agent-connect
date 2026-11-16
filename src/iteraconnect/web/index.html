@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Agent Connect · IteraCompute</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <aside>
+      <a class="brand" href="/" aria-label="Agent Connect 首页"
+        ><span class="mark">i<span>c</span></span
+        ><span>Agent Connect<small>by IteraCompute</small></span></a
+      >
+      <div class="nav-label">工作空间</div>
+      <div class="nav active"><span>↗</span> 客户端连接</div>
+      <div class="aside-note">
+        <span class="dot"></span> 在你的电脑上运行
+        <p>选择你喜欢的工具，<br />连接你需要的模型。</p>
+      </div>
+      <a
+        class="repo"
+        href="https://github.com/IteraCompute/agent-connect"
+        target="_blank"
+        rel="noreferrer"
+        >GitHub · 开源项目 ↗</a
+      >
+    </aside>
+    <main>
+      <header>
+        <span class="eyebrow">YOUR MODELS. YOUR TOOLS.</span
+        ><span class="local-pill"
+          ><span class="dot"></span> 本地服务运行中</span
+        >
+      </header>
+      <div class="intro">
+        <h1>让工具，连上你的模型。</h1>
+        <p>一个 API，连接你的编码工具与智能体。选好，即可接入。</p>
+      </div>
+      <div id="fatal" role="alert" hidden></div>
+      <div class="workspace">
+        <section class="panel provider-panel">
+          <div class="section-title">
+            <span class="step">01</span>
+            <h2>选择 API</h2>
+            <span class="subtle">模型从这里来</span>
+          </div>
+          <div class="provider-top">
+            <label class="grow"
+              >服务商<select
+                id="provider"
+                aria-label="API 服务商"
+              ></select></label
+            ><button id="add-provider" class="text-button">＋ 添加 API</button>
+          </div>
+          <div id="new-fields" hidden>
+            <label
+              >API 标识<input
+                id="provider-id"
+                placeholder="例如 my-api"
+                maxlength="48" /></label
+            ><label
+              >显示名称<input id="provider-name" placeholder="我的 API"
+            /></label>
+          </div>
+          <label
+            >API key <span id="key-status" class="field-note"></span
+            ><input
+              id="api-key"
+              type="password"
+              autocomplete="new-password"
+              spellcheck="false"
+              placeholder="填写你的 API key"
+          /></label>
+          <label
+            >模型
+            <div class="input-action">
+              <input
+                id="model"
+                list="model-list"
+                value="Auto"
+                autocomplete="off"
+              /><button id="models" class="inline-button">获取模型 ↻</button>
+            </div>
+            <datalist id="model-list"></datalist
+          ></label>
+          <details id="advanced">
+            <summary>高级设置 <span>自定义地址与协议</span></summary>
+            <label
+              >API 地址<input id="base-url" type="url" spellcheck="false"
+            /></label>
+            <fieldset>
+              <legend>API 支持的协议</legend>
+              <label
+                ><input type="checkbox" name="protocol" value="chat" /> Chat
+                Completions</label
+              ><label
+                ><input type="checkbox" name="protocol" value="responses" />
+                Responses</label
+              ><label
+                ><input type="checkbox" name="protocol" value="anthropic" />
+                Anthropic Messages</label
+              ><label
+                ><input type="checkbox" name="protocol" value="gemini" />
+                Gemini</label
+              >
+            </fieldset>
+            <p class="hint">
+              只勾选该 API 实际支持的协议。不同路径可在配置文件中设置
+              endpoints。
+            </p>
+          </details>
+          <div class="save-row">
+            <button id="save" class="secondary">保存 API 设置</button
+            ><button id="reload" class="text-button">重新读取配置</button>
+          </div>
+          <p class="privacy">◇ 密钥仅保存在本机，界面不会回显。</p>
+        </section>
+        <section class="panel clients-panel">
+          <div class="section-title">
+            <span class="step">02</span>
+            <h2>选择客户端</h2>
+            <span class="subtle">用你熟悉的工具</span>
+          </div>
+          <div
+            id="clients"
+            class="client-grid"
+            role="group"
+            aria-label="选择客户端"
+          ></div>
+          <div class="connection-path">
+            <span id="path-provider">IteraCompute</span
+            ><span class="path-line">→</span><span>本地连接</span
+            ><span class="path-line">→</span
+            ><strong id="path-client">Claude Code</strong>
+          </div>
+          <div class="connect-row">
+            <div>
+              <strong id="client-caption">连接 Claude Code</strong>
+              <p id="client-hint">自动配置，随时恢复。</p>
+            </div>
+            <button id="connect" class="primary">
+              连接客户端 <span>↗</span>
+            </button>
+          </div>
+          <div class="client-footer">
+            <span>连接前自动备份原配置</span>
+            <div>
+              <button id="export" class="text-button">导出配置</button
+              ><button id="disconnect" class="text-button">恢复原配置</button>
+            </div>
+          </div>
+        </section>
+      </div>
+      <section class="panel test-panel">
+        <div class="test-heading">
+          <span class="step">03</span>
+          <div>
+            <h2>确认连接可用</h2>
+            <p>
+              API
+              测试检查文本、流式输出与工具调用；客户端实测检查工具是否真正收到回复。
+            </p>
+          </div>
+        </div>
+        <div class="test-buttons">
+          <button id="probe" class="secondary">测试 API</button
+          ><button id="smoke" class="secondary">客户端实测</button>
+        </div>
+        <p class="hint cost">
+          点击测试将使用当前 key 发起请求，可能产生少量 API 费用。API 测试最多 4
+          次请求；客户端实测可能发起多次请求。
+        </p>
+        <div id="result" role="status" aria-live="polite">
+          <span class="empty-icon">↳</span
+          ><span>准备就绪。填写 key 后，选择客户端并开始连接。</span>
+        </div>
+        <details id="result-details" hidden>
+          <summary>查看测试详情</summary>
+          <pre id="result-json"></pre>
+        </details>
+      </section>
+      <footer>
+        <span>使用客户端期间，请保持 Agent Connect 运行。</span
+        ><span id="settings-location"></span>
+      </footer>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>

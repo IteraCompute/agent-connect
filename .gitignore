@@ -10,3 +10,4 @@ dist/
 .local/
 reports/
 .ruff_cache/
+agent-connect.local.toml

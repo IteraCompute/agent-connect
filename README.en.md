@@ -1,43 +1,89 @@
-# IteraCompute Agent Connect
+# Agent Connect
 
-[中文](README.md)
+**Choose an API. Choose a client. Connect.**
 
-A composable connector for CC Switch and Magpie, with IteraCompute selected by default.
-It preserves both upstream applications and adds a provider registry, authenticated loopback
-relay, CC Switch import links, Magpie synchronization, native-client launchers and contract tests.
-It does not combine the two desktop applications into a new UI.
+An original local control panel, native configuration manager and authenticated relay for
+Claude Code, Codex, WorkBuddy, WorkBuddy AI, OpenClaw and Hermes. IteraCompute is the default;
+other compatible APIs are selectable. No CC Switch or Magpie installation is needed for the
+simple workflow. Their optional advanced integrations remain available without copying their
+application source.
 
-Requires Python 3.11+. No third-party Python runtime dependencies.
+[中文](README.md) · [Configuration](docs/configuration.md) · [Acceptance](docs/acceptance.md)
+
+![Agent Connect local client](docs/images/client.jpg)
+
+## Start
+
+Requires Python 3.11+ and the client you want to use. The implementation is under administrator
+review, so use the feature branch until it is merged:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install .
-itera-connect init
-itera-connect install-magpie
-read -rsp 'IteraCompute API key: ' ITERACOMPUTE_API_KEY
-export ITERACOMPUTE_API_KEY
-itera-connect up --web
+git clone --branch feat/agent-connect https://github.com/IteraCompute/agent-connect.git
+cd agent-connect
+python3 start.py
 ```
 
-In another terminal, run `itera-connect connect claude`, `connect codex`, `connect workbuddy`,
-`connect openclaw` or `connect hermes`. These commands use Magpie's native config adapters.
-`disconnect <agent>` restores the previous configuration. WorkBuddy requires a restart and a
-model selection in its task picker. `run claude|codex --via magpie -- <arguments>` offers
-process-local settings without editing native config.
+Windows: `py -3 start.py` or double-click `Start.bat`. macOS: `Start.command`.
+The browser opens a local panel. No pip install, Node.js or third-party Python runtime is required.
 
-The default bases are `https://api.iteracompute.com/v1` for OpenAI protocols and
-`https://api.iteracompute.com` for Anthropic Messages. Add other providers with
-`provider add <id> --key-env <ENV_NAME> --model <id> --chat <base-url>` and select them with
-`provider use <id>`. Restart the relay after editing providers, then run `sync`.
+1. Enter your API key. IteraCompute and the verified `openai/gpt-6-luna` model are selected by default.
+2. Choose your client and click **Connect client**. Existing settings are backed up first.
+3. Restart your client. WorkBuddy requires selecting `custom-local:iteracompute/model` in its task picker.
 
-Use `cc-link <agent>` for a CC Switch import. Links carry only a local relay credential.
-Use `magpie -- <arguments>` and `cc-switch -- <arguments>` for the upstream applications'
-full interfaces, including their additional providers, agents, routing, MCP and skills.
-Upstream feature availability is not equivalent to an end-to-end verification of every feature.
+Keep the launcher running while using the client. Closing the browser does not stop the service;
+press Ctrl+C in the terminal to stop it. The UI currently uses Chinese labels.
 
-Read [coverage](docs/coverage.md), [configuration](docs/configuration.md),
-[testing](docs/testing.md) and the [acceptance report](docs/acceptance.md).
+## Fill a file instead
 
-MIT licensed. Issues, discussions and pull requests are welcome. Merging to `main` requires
-an administrator code-owner approval and passing checks, including for administrators.
+The first launch creates `agent-connect.local.toml` beside `start.py`. Fill `api_key = ""`
+under `[providers.iteracompute]`, save, then click **重新读取配置** (Reload configuration).
+The complete blank template is [config.example.toml](config.example.toml).
+This private file is ignored by Git and written with owner-only permissions on POSIX.
+Never publish it after adding credentials. The app uses this file exclusively, not an unrelated
+vendor key inherited from your shell. Empty key input in the UI preserves the stored key;
+clear it in the file to remove it.
+
+## Providers and protocols
+
+Click **添加 API** (Add API) to save another provider. Advanced settings accept its URL and
+native protocols. Claude Code needs Anthropic Messages; Codex needs Responses; WorkBuddy,
+OpenClaw and Hermes use Chat Completions. The relay preserves the native protocol. APIs that
+need protocol conversion can use the optional [Magpie bridge](docs/advanced.md).
+
+The simple UI independently edits user settings, preserves unrelated fields and records an
+exact original backup. Restore refuses to overwrite files changed by another tool afterward.
+Standard JSON, Codex TOML and plain Hermes mapping YAML are supported. Complex YAML or JSON5
+is rejected without changing the original; advanced upstream adapters cover more formats.
+Client environment variables, project settings or organization policies can override user settings.
+
+## Verify
+
+**测试 API** checks text, complete SSE and a tool-call/result round trip for the selected
+client's protocol: up to four generation requests, each with a 256-token output budget.
+**客户端实测** launches an installed Claude Code, Codex, OpenClaw or Hermes in a temporary home with
+configuration produced by our native adapter, then verifies the actual assistant reply.
+Hermes automation uses the 0.23.1 stream-json CLI. WorkBuddy application execution requires manual acceptance; config success is
+not reported as inference success. Tests use the selected API key and may incur usage charges.
+
+See [testing](docs/testing.md), [current results](docs/acceptance.md),
+[full advanced coverage](docs/coverage.md) and [contributing](CONTRIBUTING.md).
+
+## Security and development
+
+UI: `127.0.0.1:18424`. Relay: `127.0.0.1:18423`. The UI requires a per-launch control token and
+checks Host/Origin. Vendor keys stay in the private file and relay process; clients receive
+only the local relay token. Protect that token too. Neither prompts nor raw client logs are recorded.
+Use `python3 start.py --port 18434 --relay-port 18433` to change ports, then reconnect clients.
+
+```bash
+python -m pip install -e . -r requirements-dev.txt
+python -m unittest discover -v
+ruff check .
+ruff format --check .
+python -m build
+```
+
+MIT licensed. Issues, discussions and PRs are welcome. Protected `main` requires administrator
+CODEOWNER approval and passing checks, including for administrators. We do not merge our own
+implementation. Organization Actions and initial review ownership still need administrator setup;
+see [governance](docs/governance.md). Optional upstream licenses/pins remain recorded.
