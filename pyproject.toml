@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iteracompute-agent-connect"
+version = "0.1.0"
+description = "Connect any model provider to coding harnesses and agents with CC Switch and Magpie"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES"]
+authors = [{name = "IteraCompute"}]
+dependencies = []
+
+[project.scripts]
+itera-connect = "iteraconnect.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/IteraCompute/agent-connect"
+Issues = "https://github.com/IteraCompute/agent-connect/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+iteraconnect = ["upstreams.lock.json", "upstream-notices.txt"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

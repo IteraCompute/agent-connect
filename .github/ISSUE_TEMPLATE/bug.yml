@@ -1,0 +1,20 @@
+name: Bug report
+description: Report a reproducible connector problem without credentials
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Include reproduction steps, expected behavior, client versions, protocol and model ID. Never include keys or private prompts.
+    validations:
+      required: true
+  - type: dropdown
+    id: evidence
+    attributes:
+      label: Backend used
+      options:
+        - Local fixture
+        - IteraCompute API
+        - Other API
+    validations:
+      required: true

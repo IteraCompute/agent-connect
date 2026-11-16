@@ -1,0 +1,19 @@
+# Contributing
+
+Issues, Discussions and pull requests are welcome. Include a minimal reproduction, versions,
+protocol and model ID. Redact keys, prompts and private paths before sharing logs.
+
+Develop in a branch and run the checks in [testing.md](docs/testing.md). New behavior should
+include an appropriate contract test; fixture evidence and real service evidence must remain
+separate. Change upstream pins deliberately, retain licenses and verify release digests.
+
+`main` is protected. Merging requires a repository administrator named in `.github/CODEOWNERS`,
+at least one approval, approval of the latest reviewable push, resolution of review conversations
+and the `checks` CI status. Stale reviews are dismissed. Administrators are subject to these rules.
+Force pushes and deletion of `main` are disabled. CI runs untrusted contributions with read-only
+repository access and no provider secrets. Automated merge is disabled.
+
+The initial administrator is `@K-3-LT`. Additional administrators can be added to CODEOWNERS
+through the same reviewed workflow; reviewers must have write access for GitHub to recognize
+their code-owner approval. Authors cannot approve their own pull requests. Never bypass the
+review requirement to resolve this: arrange a separate administrator/reviewer account.
