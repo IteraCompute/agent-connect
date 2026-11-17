@@ -13,7 +13,7 @@ configured at repository level. Current repository administrators are `K-3-LT` a
 
 ## Organization Actions policy
 
-On 2026-11-16, `GET /repos/IteraCompute/agent-connect/actions/permissions` reported
+Rechecked on 2026-11-17, `GET /repos/IteraCompute/agent-connect/actions/permissions` reported
 `enabled=false`. Repository-level enablement returned **409: GitHub Actions is disabled on this
 repository by the organization**. The local GitHub CLI has repository administration access but
 not the organization-settings OAuth scope. The in-app browser reaches GitHub's sign-in page.
@@ -34,8 +34,9 @@ to approve their own PR. Adding `aikevan` only in the PR does not change the bas
 
 The PR proposes both existing repository administrators as CODEOWNERS. An existing administrator
 must review and authorize the first ownership setup; it cannot be silently applied by bypassing
-the required review. The initial PR stays a draft while this bootstrap issue, the organization
-Actions setting and real-key acceptance are pending. No new administrator access has been granted.
+the required review. Real-key acceptance has completed for the API and four installed CLIs (see [acceptance](acceptance.md)).
+The implementation PR is ready for independent review; the first ownership setup and organization
+Actions policy still block merge. No new administrator access has been granted.
 
 After setup, run `python scripts/check_governance.py` under a repository administrator account.
 The audit returns nonzero while Actions or base-branch ownership is still pending.

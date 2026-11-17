@@ -42,10 +42,12 @@ workspace acceptance. CC Switch desktop import click-through remains a separate 
 
 ## Local automated evidence
 
-The local suite passes **50 tests** with pinned Magpie and installed native CLI opt-ins enabled.
+Rechecked on **2026-11-17**: the local suite passes **52 tests** with pinned Magpie and installed native CLI opt-ins enabled.
 It covers the independent UI management API, private settings, no inherited-key fallback,
 Host/Origin/control-token checks, fixture requests, exact native restoration, later-edit
 conflicts, symlink preservation, WorkBuddy list/object formats, and stale Hermes route/key fields.
+Draft model discovery additionally verifies that both success and failure preserve the private file,
+active provider and live key, with temporary credentials removed afterward.
 
 The native-settings suite exercises actual installed Claude Code, Codex, OpenClaw and Hermes against
 a local fixture backend. Hermes 0.23.1 was separately installed and passed the same independent
@@ -73,11 +75,20 @@ Add the Hermes executable's directory to PATH to include it in the independent n
 suite. Plain test runs skip installed-program opt-ins. Reports under `reports/` remain private
 and ignored by Git; the public record contains only safe result summaries.
 
+## UI regression (2026-11-17)
+
+The redesigned local workspace was exercised in the browser against a simulated vendor with
+an isolated HOME and client directories. Desktop and 390 px layouts, keyboard client selection,
+protocol mismatch, duplicate-provider validation, model discovery before saving a model, automatic
+save/connect, result cards, native configuration restore, copyable export and stale-result clearing
+passed. No daily client settings were changed. README screenshots of result cards are UI examples
+from this simulated backend; the real-provider evidence above remains dated 2026-11-16.
+
 ## Repository governance
 
 Public repository, Issues and Discussions enabled. Protected `main` requires administrator
 CODEOWNER review, passing checks, stale-approval dismissal, latest-push approval and resolved
-conversations; administrators are subject to the rules. The implementation remains a draft PR.
+conversations; administrators are subject to the rules. The implementation PR is ready for independent review.
 
 GitHub Actions execution is still blocked by organization policy. Base `main` CODEOWNERS still
 needs an independently eligible administrator for the first PR; the PR proposes both existing

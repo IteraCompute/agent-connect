@@ -27,7 +27,7 @@ Windows: `py -3 start.py` or double-click `Start.bat`. macOS: `Start.command`.
 The browser opens a local panel. No pip install, Node.js or third-party Python runtime is required.
 
 1. Enter your API key. IteraCompute and the verified `openai/gpt-6-luna` model are selected by default.
-2. Choose your client and click **Connect client**. Existing settings are backed up first.
+2. Choose your client and click **连接 Claude Code** (Connect Claude Code), or the selected client’s name. Existing settings are backed up first.
 3. Restart your client. WorkBuddy requires selecting `custom-local:iteracompute/model` in its task picker.
 
 Keep the launcher running while using the client. Closing the browser does not stop the service;
@@ -36,7 +36,7 @@ press Ctrl+C in the terminal to stop it. The UI currently uses Chinese labels.
 ## Fill a file instead
 
 The first launch creates `agent-connect.local.toml` beside `start.py`. Fill `api_key = ""`
-under `[providers.iteracompute]`, save, then click **重新读取配置** (Reload configuration).
+under `[providers.iteracompute]`, save, then click **重新读取** (Reload configuration).
 The complete blank template is [config.example.toml](config.example.toml).
 This private file is ignored by Git and written with owner-only permissions on POSIX.
 Never publish it after adding credentials. The app uses this file exclusively, not an unrelated
@@ -45,8 +45,13 @@ clear it in the file to remove it.
 
 ## Providers and protocols
 
-Click **添加 API** (Add API) to save another provider. Advanced settings accept its URL and
-native protocols. Claude Code needs Anthropic Messages; Codex needs Responses; WorkBuddy,
+Click **添加 API** (Add API), enter a unique lowercase ID, name, URL and key. Fetch models
+before choosing a model, or enter its ID directly. Fetching the catalog does not save the draft
+or replace the active relay credentials. New providers start with an empty key; Cancel returns
+to the previous provider. Connections, exports and tests automatically save the form.
+
+Choose only the API's supported native protocols in **地址与协议** (URL and protocols).
+Claude Code needs Anthropic Messages; Codex needs Responses; WorkBuddy,
 OpenClaw and Hermes use Chat Completions. The relay preserves the native protocol. APIs that
 need protocol conversion can use the optional [Magpie bridge](docs/advanced.md).
 
@@ -56,6 +61,18 @@ Standard JSON, Codex TOML and plain Hermes mapping YAML are supported. Complex Y
 is rejected without changing the original; advanced upstream adapters cover more formats.
 Client environment variables, project settings or organization policies can override user settings.
 
+## Reading the interface
+
+The save badge shows pending changes. Each client card shows installation detection and whether
+an original-config backup exists; neither is an inference result. The connection preview shows
+the selected API, model and required protocol. A protocol mismatch disables connection/testing
+and links to the relevant setting. Checking a protocol does not add support to the API itself.
+Client cards support Tab, arrow keys and Home/End. Narrow screens use a stacked layout.
+
+Tests show separate text, streaming and tool-roundtrip cards. Details are collapsed by default;
+changing the API, model or client clears stale results. Export includes a copy button for the
+local relay configuration. Restore becomes available after a configuration backup exists.
+
 ## Verify
 
 **测试 API** checks text, complete SSE and a tool-call/result round trip for the selected
@@ -64,6 +81,11 @@ client's protocol: up to four generation requests, each with a 256-token output 
 configuration produced by our native adapter, then verifies the actual assistant reply.
 Hermes automation uses the 0.23.1 stream-json CLI. WorkBuddy application execution requires manual acceptance; config success is
 not reported as inference success. Tests use the selected API key and may incur usage charges.
+
+![API result cards](docs/images/test-passed.jpg)
+
+The result-card screenshot uses a local simulated backend to demonstrate the UI. Actual
+IteraCompute and installed-client evidence is recorded separately in [acceptance](docs/acceptance.md).
 
 See [testing](docs/testing.md), [current results](docs/acceptance.md),
 [full advanced coverage](docs/coverage.md) and [contributing](CONTRIBUTING.md).
@@ -84,6 +106,6 @@ python -m build
 ```
 
 MIT licensed. Issues, discussions and PRs are welcome. Protected `main` requires administrator
-CODEOWNER approval and passing checks, including for administrators. We do not merge our own
-implementation. Organization Actions and initial review ownership still need administrator setup;
+CODEOWNER approval and passing checks, including for administrators. Every merge must satisfy
+those protections. Organization Actions and initial review ownership still need administrator setup;
 see [governance](docs/governance.md). Optional upstream licenses/pins remain recorded.

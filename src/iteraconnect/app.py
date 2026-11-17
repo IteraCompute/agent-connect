@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import hmac
 import json
+import os
 import secrets
 import shutil
 import threading
@@ -78,7 +79,38 @@ class App(ThreadingHTTPServer):
             ],
         }
 
+    def draft_models(self, body):
+        """Discover models without saving a draft or changing live relay credentials."""
+        pid = body.get("provider")
+        if not isinstance(pid, str):
+            raise ConnectError("请选择有效的 API。")
+        old = self.data["providers"].get(pid, {})
+        provider = {k: body.get(k, old.get(k)) for k in ("name", "base_url", "protocols")}
+        provider["model"] = body.get("model") or old.get("model") or "Auto"
+        provider["api_key"] = body.get("api_key") or old.get("api_key", "")
+        if "endpoints" in body or "endpoints" in old:
+            provider["endpoints"] = body.get("endpoints", old.get("endpoints"))
+        # Each request owns a distinct temporary env reference; the active provider
+        # can keep serving requests with its original key during discovery.
+        temporary = "catalog-" + secrets.token_hex(16)
+        data = {
+            "selected_provider": temporary,
+            "client": body.get("client", self.data["client"]),
+            "providers": {temporary: provider},
+        }
+        check_settings(data)
+        if not provider["api_key"]:
+            raise ConnectError("请先填写此 API 的 key。")
+        key_env = "ITERACONNECT_APP_KEY_" + temporary.upper().replace("-", "_")
+        try:
+            config = runtime_config(data, self.relay.server_port)
+            return {"models": [m["id"] for m in provider_models(config["providers"][temporary])]}
+        finally:
+            os.environ.pop(key_env, None)
+
     def action(self, route, body):
+        if route == "/api/models" and body:
+            return self.draft_models(body)
         if route == "/api/reload":
             self.activate(read_settings(self.settings_path))
             return self.state()

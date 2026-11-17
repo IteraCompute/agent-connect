@@ -289,6 +289,48 @@ class ControlPanelTests(unittest.TestCase):
                 self.app.relay.shutdown()
                 worker.join(timeout=3)
 
+    def test_model_discovery_works_before_saving_a_custom_provider_or_model(self):
+        original = self.app.settings_path.read_bytes()
+        active = copy.deepcopy(self.app.config)
+        active_key_env = active["providers"]["iteracompute"]["key_env"]
+        original_key = os.environ[active_key_env]
+        before_env = dict(os.environ)
+        with stack() as (config, vendor, gateway):
+            status, raw = self.call(
+                "/api/models",
+                {
+                    "provider": "my-api",
+                    "name": "My API",
+                    "client": "codex",
+                    "base_url": config["providers"]["iteracompute"]["endpoints"]["chat"],
+                    "protocols": ["chat", "responses"],
+                    "api_key": VENDOR_KEY,
+                    "model": "",
+                },
+            )
+        self.assertEqual(status, 200, raw)
+        self.assertIn(MODEL, json.loads(raw)["models"])
+        self.assertNotIn(VENDOR_KEY.encode(), raw)
+        self.assertEqual(self.app.settings_path.read_bytes(), original)
+        self.assertEqual(self.app.config, active)
+        self.assertEqual(os.environ[active_key_env], original_key)
+        self.assertFalse(set(os.environ) - set(before_env))
+        self.assertNotIn("my-api", self.app.data["providers"])
+
+    def test_failed_draft_discovery_cleans_up_and_preserves_the_saved_key(self):
+        self.app.data["providers"]["iteracompute"]["api_key"] = VENDOR_KEY
+        original = self.app.settings_path.read_bytes()
+        before_env = dict(os.environ)
+        with patch("iteraconnect.app.provider_models", side_effect=ConnectError("目录暂不可用")):
+            status, raw = self.call(
+                "/api/models", {"provider": "iteracompute", "api_key": "draft-only-key"}
+            )
+        self.assertEqual(status, 400)
+        self.assertNotIn(b"draft-only-key", raw)
+        self.assertEqual(self.app.settings_path.read_bytes(), original)
+        self.assertEqual(self.app.data["providers"]["iteracompute"]["api_key"], VENDOR_KEY)
+        self.assertEqual(dict(os.environ), before_env)
+
     def test_external_key_file_edits_are_not_overwritten_by_stale_ui(self):
         data = read_settings(self.app.settings_path)
         data["providers"]["iteracompute"]["api_key"] = VENDOR_KEY

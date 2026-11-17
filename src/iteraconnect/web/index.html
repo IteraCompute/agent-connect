@@ -3,148 +3,303 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="light" />
     <title>Agent Connect · IteraCompute</title>
     <link rel="stylesheet" href="/app.css" />
   </head>
   <body>
-    <aside>
-      <a class="brand" href="/" aria-label="Agent Connect 首页"
-        ><span class="mark">i<span>c</span></span
-        ><span>Agent Connect<small>by IteraCompute</small></span></a
-      >
-      <div class="nav-label">工作空间</div>
-      <div class="nav active"><span>↗</span> 客户端连接</div>
-      <div class="aside-note">
-        <span class="dot"></span> 在你的电脑上运行
-        <p>选择你喜欢的工具，<br />连接你需要的模型。</p>
-      </div>
-      <a
-        class="repo"
-        href="https://github.com/IteraCompute/agent-connect"
-        target="_blank"
-        rel="noreferrer"
-        >GitHub · 开源项目 ↗</a
-      >
-    </aside>
-    <main>
-      <header>
-        <span class="eyebrow">YOUR MODELS. YOUR TOOLS.</span
-        ><span class="local-pill"
-          ><span class="dot"></span> 本地服务运行中</span
+    <svg
+      class="icon-defs"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path d="M5 12h14m-6-6 6 6-6 6" />
+      </symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24">
+        <path d="M12 5v14M5 12h14" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="m5 12 4 4L19 6" />
+      </symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24">
+        <path
+          d="M20 10a8 8 0 0 0-14-4L3 9m0-6v6h6m-5 5a8 8 0 0 0 14 4l3-3m0 6v-6h-6"
+        />
+      </symbol>
+      <symbol id="i-shield" viewBox="0 0 24 24">
+        <path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z" />
+        <path d="m8 12 3 3 5-5" />
+      </symbol>
+      <symbol id="i-link" viewBox="0 0 24 24">
+        <path
+          d="m10 13 4-4m-6 6-2 2a4 4 0 0 0 6 6l4-4a4 4 0 0 0 0-6m0-2 2-2a4 4 0 0 0-6-6L8 5a4 4 0 0 0 0 6"
+          transform="translate(0 -1)"
+        />
+      </symbol>
+      <symbol id="i-external" viewBox="0 0 24 24">
+        <path
+          d="M14 4h6v6m0-6L10 14M10 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"
+        />
+      </symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24">
+        <path d="m9 5 7 7-7 7" />
+      </symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24">
+        <rect x="8" y="8" width="12" height="12" rx="2" />
+        <path d="M15 8V4H4v11h4" />
+      </symbol>
+      <symbol id="i-info" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 11v6m0-11v1" />
+      </symbol>
+      <symbol id="i-terminal" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="16" rx="3" />
+        <path d="m7 9 3 3-3 3m6 0h4" />
+      </symbol>
+    </svg>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="/" aria-label="Agent Connect 首页">
+          <span class="brand-mark" aria-hidden="true"
+            ><span></span><span></span><i></i
+          ></span>
+          <span>Agent Connect<small>by IteraCompute</small></span>
+        </a>
+        <nav aria-label="主导航">
+          <a class="nav-current" href="#workspace" aria-current="page"
+            >连接工作台</a
+          ><a
+            href="https://github.com/IteraCompute/agent-connect#readme"
+            target="_blank"
+            rel="noreferrer"
+            >使用指南<svg class="icon"><use href="#i-external" /></svg
+          ></a>
+        </nav>
+        <span class="service-status" id="service-status"
+          ><span class="status-dot"></span>本地服务运行中</span
         >
-      </header>
+      </div>
+    </header>
+    <main>
       <div class="intro">
-        <h1>让工具，连上你的模型。</h1>
-        <p>一个 API，连接你的编码工具与智能体。选好，即可接入。</p>
+        <div>
+          <div class="eyebrow"><span></span> YOUR MODELS. YOUR TOOLS.</div>
+          <h1>把模型，接入你的工作流。</h1>
+          <p>选择 API 和客户端，让你熟悉的工具用上你需要的模型。</p>
+        </div>
+        <div class="local-note">
+          <svg class="icon"><use href="#i-shield" /></svg>
+          <div>
+            <strong>你的密钥，留在本机</strong
+            ><span>本地运行 · 随时切换 · 可恢复配置</span>
+          </div>
+        </div>
       </div>
       <div id="fatal" role="alert" hidden></div>
-      <div class="workspace">
-        <section class="panel provider-panel">
-          <div class="section-title">
+      <div class="workspace" id="workspace">
+        <section
+          class="panel provider-panel"
+          aria-labelledby="provider-heading"
+        >
+          <div class="section-heading">
             <span class="step">01</span>
-            <h2>选择 API</h2>
-            <span class="subtle">模型从这里来</span>
-          </div>
-          <div class="provider-top">
-            <label class="grow"
-              >服务商<select
-                id="provider"
-                aria-label="API 服务商"
-              ></select></label
-            ><button id="add-provider" class="text-button">＋ 添加 API</button>
-          </div>
-          <div id="new-fields" hidden>
-            <label
-              >API 标识<input
-                id="provider-id"
-                placeholder="例如 my-api"
-                maxlength="48" /></label
-            ><label
-              >显示名称<input id="provider-name" placeholder="我的 API"
-            /></label>
-          </div>
-          <label
-            >API key <span id="key-status" class="field-note"></span
-            ><input
-              id="api-key"
-              type="password"
-              autocomplete="new-password"
-              spellcheck="false"
-              placeholder="填写你的 API key"
-          /></label>
-          <label
-            >模型
-            <div class="input-action">
-              <input
-                id="model"
-                list="model-list"
-                value="Auto"
-                autocomplete="off"
-              /><button id="models" class="inline-button">获取模型 ↻</button>
+            <div>
+              <h2 id="provider-heading">配置你的 API</h2>
+              <p>选择服务商与模型</p>
             </div>
-            <datalist id="model-list"></datalist
-          ></label>
+            <span id="save-state" class="badge neutral">本地配置</span>
+          </div>
+          <div class="field-label">
+            <label for="provider">API 服务商</label
+            ><button id="add-provider" class="text-button">
+              <svg class="icon"><use href="#i-plus" /></svg>添加 API
+            </button>
+          </div>
+          <select id="provider" aria-label="API 服务商"></select>
+          <div id="new-fields" class="new-provider" hidden>
+            <div class="new-provider-title">
+              <strong>添加自定义 API</strong
+              ><button id="cancel-provider" class="text-button">
+                取消添加
+              </button>
+            </div>
+            <label for="provider-id">API 标识</label
+            ><input
+              id="provider-id"
+              placeholder="例如 my-api"
+              maxlength="48"
+              autocomplete="off"
+              aria-describedby="provider-id-error"
+            />
+            <p id="provider-id-error" class="field-error" hidden></p>
+            <label for="provider-name">显示名称</label
+            ><input
+              id="provider-name"
+              placeholder="我的 API"
+              autocomplete="off"
+            />
+          </div>
+          <div class="field-label key-label">
+            <label for="api-key">API key</label
+            ><span id="key-status" class="field-note"></span>
+          </div>
+          <input
+            id="api-key"
+            type="password"
+            autocomplete="new-password"
+            spellcheck="false"
+            placeholder="填写你的 API key"
+            aria-describedby="key-help api-key-error"
+          />
+          <p id="key-help" class="field-help">
+            密钥只保存到本机，留空可保留已保存的 key。
+          </p>
+          <p id="api-key-error" class="field-error" hidden></p>
+          <div class="field-label">
+            <label for="model">模型</label
+            ><button id="models" class="text-button">
+              <svg class="icon"><use href="#i-refresh" /></svg>获取模型
+            </button>
+          </div>
+          <input
+            id="model"
+            list="model-list"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="选择或输入模型 ID"
+            aria-describedby="model-help model-error"
+          />
+          <datalist id="model-list"></datalist>
+          <p id="model-help" class="field-help">
+            可直接输入模型 ID，也可从 API 获取列表。
+          </p>
+          <p id="model-error" class="field-error" hidden></p>
           <details id="advanced">
-            <summary>高级设置 <span>自定义地址与协议</span></summary>
-            <label
-              >API 地址<input id="base-url" type="url" spellcheck="false"
-            /></label>
-            <fieldset>
-              <legend>API 支持的协议</legend>
-              <label
-                ><input type="checkbox" name="protocol" value="chat" /> Chat
-                Completions</label
-              ><label
-                ><input type="checkbox" name="protocol" value="responses" />
-                Responses</label
-              ><label
-                ><input type="checkbox" name="protocol" value="anthropic" />
-                Anthropic Messages</label
-              ><label
-                ><input type="checkbox" name="protocol" value="gemini" />
-                Gemini</label
-              >
-            </fieldset>
-            <p class="hint">
-              只勾选该 API 实际支持的协议。不同路径可在配置文件中设置
-              endpoints。
-            </p>
+            <summary>
+              <span
+                ><svg class="icon"><use href="#i-chevron" /></svg
+                >地址与协议</span
+              ><span id="protocol-summary">高级设置</span>
+            </summary>
+            <div class="advanced-body">
+              <label for="base-url">API 地址</label
+              ><input
+                id="base-url"
+                type="url"
+                spellcheck="false"
+                placeholder="https://api.example.com/v1"
+                aria-describedby="base-url-error"
+              />
+              <p id="base-url-error" class="field-error" hidden></p>
+              <fieldset>
+                <legend>API 实际支持的协议</legend>
+                <label
+                  ><input type="checkbox" name="protocol" value="chat" />Chat
+                  Completions</label
+                ><label
+                  ><input
+                    type="checkbox"
+                    name="protocol"
+                    value="responses"
+                  />Responses</label
+                ><label
+                  ><input
+                    type="checkbox"
+                    name="protocol"
+                    value="anthropic"
+                  />Anthropic Messages</label
+                ><label
+                  ><input
+                    type="checkbox"
+                    name="protocol"
+                    value="gemini"
+                  />Gemini</label
+                >
+              </fieldset>
+              <p class="field-help">
+                只选择服务实际支持的协议。不同协议的独立路径可在本地配置文件中设置。
+              </p>
+            </div>
           </details>
           <div class="save-row">
             <button id="save" class="secondary">保存 API 设置</button
-            ><button id="reload" class="text-button">重新读取配置</button>
+            ><button
+              id="reload"
+              class="text-button"
+              title="重新读取本地配置文件"
+            >
+              <svg class="icon"><use href="#i-refresh" /></svg>重新读取
+            </button>
           </div>
-          <p class="privacy">◇ 密钥仅保存在本机，界面不会回显。</p>
+          <p class="privacy">
+            <svg class="icon"><use href="#i-shield" /></svg
+            >连接或测试时会自动保存当前设置。
+          </p>
         </section>
-        <section class="panel clients-panel">
-          <div class="section-title">
+        <section class="panel clients-panel" aria-labelledby="client-heading">
+          <div class="section-heading">
             <span class="step">02</span>
-            <h2>选择客户端</h2>
-            <span class="subtle">用你熟悉的工具</span>
+            <div>
+              <h2 id="client-heading">选择你的客户端</h2>
+              <p>编码工具或智能体，都可以接入</p>
+            </div>
+            <span class="badge neutral">6 个客户端</span>
           </div>
           <div
             id="clients"
             class="client-grid"
-            role="group"
+            role="radiogroup"
             aria-label="选择客户端"
           ></div>
-          <div class="connection-path">
-            <span id="path-provider">IteraCompute</span
-            ><span class="path-line">→</span><span>本地连接</span
-            ><span class="path-line">→</span
-            ><strong id="path-client">Claude Code</strong>
-          </div>
-          <div class="connect-row">
-            <div>
-              <strong id="client-caption">连接 Claude Code</strong>
-              <p id="client-hint">自动配置，随时恢复。</p>
+          <div class="connection-preview">
+            <div class="preview-label">
+              本次连接<span id="connection-status" class="badge neutral"
+                >尚未连接</span
+              >
             </div>
-            <button id="connect" class="primary">
-              连接客户端 <span>↗</span>
-            </button>
+            <div class="connection-path">
+              <div class="path-source">
+                <span class="provider-mark" aria-hidden="true">iC</span
+                ><span
+                  ><strong id="path-provider">IteraCompute</strong
+                  ><small id="path-model">选择模型</small></span
+                >
+              </div>
+              <svg class="icon path-arrow"><use href="#i-arrow" /></svg>
+              <div class="path-target">
+                <span
+                  id="path-client-icon"
+                  class="mini-client-icon"
+                  aria-hidden="true"
+                  >✳</span
+                ><strong id="path-client">Claude Code</strong>
+              </div>
+            </div>
+            <div class="protocol-line">
+              <span>接入协议</span
+              ><strong id="required-protocol">Anthropic Messages</strong
+              ><span id="protocol-match" class="match-state">等待配置</span>
+            </div>
           </div>
+          <div id="compatibility" class="compatibility" role="status" hidden>
+            <svg class="icon"><use href="#i-info" /></svg
+            ><span id="compatibility-text"></span
+            ><button id="fix-protocol" class="text-button">检查协议</button>
+          </div>
+          <button id="connect" class="primary connect-button">
+            <svg class="icon"><use href="#i-link" /></svg
+            ><span id="connect-label">连接客户端</span
+            ><svg class="icon"><use href="#i-arrow" /></svg>
+          </button>
+          <p id="client-hint" class="connect-help">
+            自动备份原配置，连接后重启客户端即可使用。
+          </p>
           <div class="client-footer">
-            <span>连接前自动备份原配置</span>
+            <span
+              ><svg class="icon"><use href="#i-shield" /></svg
+              >原配置自动备份</span
+            >
             <div>
               <button id="export" class="text-button">导出配置</button
               ><button id="disconnect" class="text-button">恢复原配置</button>
@@ -152,37 +307,65 @@
           </div>
         </section>
       </div>
-      <section class="panel test-panel">
-        <div class="test-heading">
-          <span class="step">03</span>
-          <div>
-            <h2>确认连接可用</h2>
-            <p>
-              API
-              测试检查文本、流式输出与工具调用；客户端实测检查工具是否真正收到回复。
-            </p>
+      <section class="panel test-panel" aria-labelledby="test-heading">
+        <div class="test-toolbar">
+          <div class="section-heading">
+            <span class="step">03</span>
+            <div>
+              <h2 id="test-heading">确认连接可用</h2>
+              <p>先检查 API，再验证客户端的真实回复</p>
+            </div>
+          </div>
+          <div class="test-buttons">
+            <button id="probe" class="secondary">
+              <svg class="icon"><use href="#i-link" /></svg>测试 API</button
+            ><button id="smoke" class="secondary">
+              <svg class="icon"><use href="#i-terminal" /></svg>客户端实测
+            </button>
           </div>
         </div>
-        <div class="test-buttons">
-          <button id="probe" class="secondary">测试 API</button
-          ><button id="smoke" class="secondary">客户端实测</button>
+        <div id="result" class="result-box" role="status" aria-live="polite">
+          <span id="result-symbol" class="result-symbol" aria-hidden="true"
+            ><svg class="icon"><use href="#i-info" /></svg
+          ></span>
+          <div>
+            <strong id="result-title">准备就绪</strong>
+            <p id="result-message">填写 API key，选择客户端，即可开始连接。</p>
+          </div>
         </div>
-        <p class="hint cost">
-          点击测试将使用当前 key 发起请求，可能产生少量 API 费用。API 测试最多 4
-          次请求；客户端实测可能发起多次请求。
-        </p>
-        <div id="result" role="status" aria-live="polite">
-          <span class="empty-icon">↳</span
-          ><span>准备就绪。填写 key 后，选择客户端并开始连接。</span>
-        </div>
+        <div id="result-cards" class="result-cards" hidden></div>
         <details id="result-details" hidden>
-          <summary>查看测试详情</summary>
+          <summary>
+            <span
+              ><svg class="icon"><use href="#i-chevron" /></svg
+              ><span id="details-label">查看测试详情</span></span
+            >
+          </summary>
+          <div class="detail-toolbar">
+            <span id="details-note">仅显示脱敏结果</span
+            ><button id="copy-export" class="text-button" hidden>
+              <svg class="icon"><use href="#i-copy" /></svg>复制配置
+            </button>
+          </div>
           <pre id="result-json"></pre>
         </details>
+        <p class="cost">
+          <svg class="icon"><use href="#i-info" /></svg>测试会使用当前 API
+          key，可能产生少量费用。API 测试最多 4
+          次请求；客户端实测可能发起多次请求。
+        </p>
       </section>
       <footer>
-        <span>使用客户端期间，请保持 Agent Connect 运行。</span
-        ><span id="settings-location"></span>
+        <span
+          ><span class="status-dot"></span>使用客户端期间，请保持 Agent Connect
+          运行。</span
+        ><span id="settings-location"></span
+        ><a
+          href="https://github.com/IteraCompute/agent-connect"
+          target="_blank"
+          rel="noreferrer"
+          >GitHub · MIT 开源<svg class="icon"><use href="#i-external" /></svg
+        ></a>
       </footer>
     </main>
     <script src="/app.js" defer></script>

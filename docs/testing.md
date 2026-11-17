@@ -5,7 +5,7 @@ Tests deliberately distinguish three kinds of evidence:
 1. **Contract tests with a simulated vendor**: requests, auth substitution, provider selection,
    text, SSE completion, tool results, failures, truncation, private exports and configuration preservation.
 2. **Actual installed programs with a simulated vendor**: pinned Magpie translation and native
-   adapter restoration, plus Claude Code, Codex and OpenClaw single-turn runs in temporary homes.
+   adapter restoration, plus Claude Code, Codex, OpenClaw and Hermes single-turn runs in temporary homes.
 3. **Actual provider/model/client tests**: require an explicitly supplied test key. Fixture success
    is not evidence that the remote API, model permissions, budget, tool semantics or every client works.
 
@@ -33,7 +33,7 @@ temporary HOME/XDG/config directories, a synthetic key and a local fixture vendo
 user credentials or installed skills are copied. OpenClaw channel delivery is never enabled.
 Only clients actually installed are executed. An unavailable program is reported as unavailable.
 Magpie tests verify connection and restoration of Claude Code, Codex, WorkBuddy, OpenClaw and Hermes
-configs; WorkBuddy/Hermes application execution is separate evidence.
+configs; WorkBuddy application execution is separate evidence; the independent native-settings suite can also run installed Hermes.
 
 ## Test-key acceptance
 
@@ -50,6 +50,27 @@ settings/logins. WorkBuddy explicitly requests manual acceptance in the original
 Host/Origin/control-token enforcement, local-fixture probes, independent configuration
 preservation, reconnect, exact restoration and protection against later edits. The opt-in
 `NativeSettingsClientTests` reads these new native configs with the installed actual clients.
+
+### Browser UI regression
+
+Use a temporary HOME/config directory and a local fixture vendor; do not connect the UI test
+instance to daily client settings. The 2026-11-17 UI regression covered:
+
+- Desktop at the normal browser viewport, and a 390 px narrow viewport without horizontal overflow.
+- Radio selection using arrow keys, protocol mismatch disabling connection and tests, and its settings link.
+- Duplicate provider validation, cancellation, and custom model discovery with no model or saved draft.
+- Automatic save/connect for a custom provider, independent text/SSE/tool result cards, and exact restore.
+- Clearing stale results when selections change, and copyable manual export with no vendor key.
+
+`tests.test_app` additionally verifies that successful and failed draft catalog requests preserve
+the private file, selected provider and live credentials, and remove temporary credential references.
+Screenshot result cards in the README use the simulated vendor; they are not new real-provider evidence.
+Frontend development checks (Node is only needed for development):
+
+```bash
+node --check src/iteraconnect/web/app.js
+npx --yes prettier@3.6.2 --check src/iteraconnect/web/index.html src/iteraconnect/web/app.css src/iteraconnect/web/app.js
+```
 
 ### Advanced CLI
 

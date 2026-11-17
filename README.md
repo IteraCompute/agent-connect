@@ -3,7 +3,7 @@
 **选择 API → 选择客户端 → 点击连接。**
 
 一个轻量的本地客户端，让 Claude Code、Codex、WorkBuddy、OpenClaw 和 Hermes 使用你选择的模型 API。
-默认 IteraCompute，也可以添加其他兼容 API。独立实现界面、配置管理和本地转发，运行时只有 Python 标准库；
+默认使用 IteraCompute，也可以保存和切换其他兼容 API。界面、配置管理和本地转发均为独立实现，运行时只有 Python 标准库；
 默认流程无需安装 CC Switch 或 Magpie，没有复制它们的应用代码。
 
 [English](README.en.md) · [配置说明](docs/configuration.md) · [测试状态](docs/acceptance.md) · [高级接入](docs/advanced.md) · [参与贡献](CONTRIBUTING.md)
@@ -12,7 +12,7 @@
 
 ## 三步开始
 
-需要 **Python 3.11+**，以及你要使用的客户端。开发版尚在管理员审核中，先使用功能分支：
+需要 **Python 3.11+**，以及你要使用的客户端。[首次发布 PR](https://github.com/IteraCompute/agent-connect/pull/1) 正在审核，合并前请使用功能分支：
 
 ```bash
 git clone --branch feat/agent-connect https://github.com/IteraCompute/agent-connect.git
@@ -26,7 +26,7 @@ Windows 用 `py -3 start.py`，或双击 `Start.bat`；macOS 可双击 `Start.co
 
 1. **填写 key**：默认已选 IteraCompute，填入 key，模型预选实测通过的 `openai/gpt-6-luna`；也可点击“获取模型”切换。
 2. **选择客户端**：点击 Claude Code、Codex、WorkBuddy、WorkBuddy AI、OpenClaw 或 Hermes。
-3. **点击“连接客户端”**：自动备份并写入配置。重启对应客户端即可使用；WorkBuddy 需要在任务模型菜单中选择 `custom-local:iteracompute/模型名`。
+3. **点击“连接 Claude Code”等对应按钮**：自动备份并写入配置。重启对应客户端即可使用；WorkBuddy 需要在任务模型菜单中选择 `custom-local:iteracompute/模型名`。
 
 连接前不需要测试。要验证可用性，可点击“测试 API”或“客户端实测”。使用期间保持 Agent Connect 的启动窗口运行。
 关闭浏览器标签页不会停止本地服务；终端按 `Ctrl+C` 停止。下次运行 `python3 start.py` 即可继续使用。
@@ -41,7 +41,7 @@ Windows 用 `py -3 start.py`，或双击 `Start.bat`；macOS 可双击 `Start.co
 api_key = "在这里填写你的测试 key"
 ```
 
-上面是需要修改的段落，完整配置请使用生成的文件。保存后在界面点击“重新读取配置”，即可开始测试。
+上面是需要修改的段落，完整配置请使用生成的文件。保存后在界面点击“重新读取”，即可开始测试。
 也可以提前复制模板：
 
 ```bash
@@ -55,7 +55,11 @@ python3 start.py
 
 ## 换其他 API
 
-点击“添加 API”，填写名称、地址、key 和模型，再在高级设置中勾选服务实际支持的协议。保存后可随时切换。
+1. 点击“添加 API”，填写唯一标识（如 `my-api`）、显示名称、key 和 API 地址。
+2. 点击“获取模型”再选择模型，或直接填写模型 ID。获取列表无需先填模型，也不会保存草稿或更换当前转发凭据。
+3. 在“地址与协议”中勾选该 API **实际支持**的协议，选择客户端后点击连接。也可先保存 API 设置，以后从服务商菜单切换。
+
+新增 API 时不会沿用另一个服务商的 key；“取消添加”可回到原有设置。连接、导出和测试会自动保存当前设置；仅获取模型不会保存。
 
 | 客户端 | API 需要支持 | 连接后操作 |
 | --- | --- | --- |
@@ -66,13 +70,24 @@ python3 start.py
 | Hermes | OpenAI Chat Completions | 重启 / 新开 Hermes 会话 |
 
 IteraCompute 默认配置了 Chat、Responses、Messages 三种协议；具体模型是否支持工具、推理参数等，需要测试确认。
-初次验收时 `Auto` 返回过 400/429，因此简化版预选了三个协议和三个客户端均实测通过的具体模型；仍可手动选择 `Auto`。
+初次验收时 `Auto` 返回过 400/429，因此简化版预选了三个协议和四个客户端均实测通过的具体模型；仍可手动选择 `Auto`。
 OpenAI 兼容地址可以填写 `https://example.com/v1`；不同协议使用不同路径时，见[自定义 endpoints](docs/configuration.md)。
 本地 Ollama/vLLM 等服务可使用回环 HTTP 地址和任意非空占位 key（如 `local`）。
 
 本地转发保留原生协议，不会把 Chat 自动转换成 Responses 或 Messages。
 需要协议转换、订阅登录、更多客户端、MCP、skills 等功能时，可以使用保留的
 [Magpie / CC Switch 高级入口](docs/advanced.md)；这些功能尚未全部重写进简化界面。
+
+## 界面里的状态
+
+- **有未保存更改**：刚修改了 API、模型、协议或所选客户端。点击连接或测试会自动保存。
+- **协议匹配 / 需要配置**：按客户端所需协议检查。缺少协议时连接与测试按钮不可用，点击“检查协议”定位设置；勾选协议本身不会增加 API 的能力。
+- **已检测到安装**：检测到了命令或配置目录，仍需实际测试确认可用。未检测到安装也可以提前写入配置。
+- **已配置 · 可恢复**：存在原配置备份；可以点击“恢复原配置”。这不表示当前模型已经通过推理测试。
+- **API 测试通过**：文本、完整流式输出、工具往返各有一张结果卡。详细报告默认收起；修改 API、模型或客户端后，旧结果会清除。
+
+客户端卡片支持 Tab 聚焦、方向键切换、Home / End 跳转；窄屏会自动改为单列工作台。
+“导出配置”可查看并复制手动配置片段，其中只有本地网关令牌。
 
 ## 测试的含义
 
@@ -85,6 +100,10 @@ OpenAI 兼容地址可以填写 `https://example.com/v1`；不同协议使用不
 
 测试提示词为 `Reply with exactly ITERACONNECT_OK.`。API 工具测试只回传固定字符串，不执行模型生成的命令。
 Hermes 自动测试基于 0.23.1 的 `stream-json` CLI；旧版请升级或手动验证。客户端单轮实测不能替代完整的工作流验收。当前证据及未完成项目见[验收记录](docs/acceptance.md)。
+
+![文本、流式与工具调用的独立结果卡](docs/images/test-passed.jpg)
+
+以上结果卡截图使用本地模拟后端，仅展示界面；真实 IteraCompute 与四个 CLI 的独立验收记录见[测试状态](docs/acceptance.md)。
 
 ## 配置、备份与恢复
 
@@ -103,8 +122,11 @@ Hermes 自动测试基于 0.23.1 的 `stream-json` CLI；旧版请升级或手�
 `python3 start.py --port 18434 --relay-port 18433`；变更转发端口后需重新连接客户端。
 浏览器没有自动打开时，复制终端显示的完整地址（含 `#` 后的本地管理令牌）。
 
-**401 / 403**：检查 key、模型权限和账号状态。修改文件后点“重新读取配置”。
+**401 / 403**：检查 key、模型权限和账号状态。修改文件后点“重新读取”。
 服务不会把供应商返回的原始错误正文显示到日志，避免泄露密钥。
+
+**缺少协议 / 获取模型失败**：先核对 API 的文档与地址。目录接口可能未提供；可以直接输入模型 ID。
+仅支持 Chat 的接口不能直接连接要求 Responses 的 Codex 或要求 Messages 的 Claude Code，可使用[高级协议转换](docs/advanced.md)。
 
 **API 测试通过但工具仍不可用**：确认协议匹配，重新连接并重启客户端，检查项目级配置或环境变量覆盖。
 工具调用还受模型能力、客户端版本及权限设置影响。
@@ -127,6 +149,6 @@ python -m build
 界面位于 `src/iteraconnect/web`，原生配置适配器位于 `native.py`，转发位于 `gateway.py`。
 
 MIT 开源，欢迎 [Issues](https://github.com/IteraCompute/agent-connect/issues)、Discussions 和 PR。
-`main` 要求管理员 CODEOWNER 审核、CI 检查及讨论解决，管理员同样受保护规则约束。实现通过 PR 提交，不自动合并。
+`main` 要求管理员 CODEOWNER 审核、CI 检查及讨论解决，管理员同样受保护规则约束。所有合并均需满足这些保护规则。
 当前组织 Actions 与首次 CODEOWNERS 审核设置仍需管理员处理，见[治理状态](docs/governance.md)。
 上游可选组件的固定版本和许可证见 [THIRD_PARTY_NOTICES](THIRD_PARTY_NOTICES) 与锁文件。

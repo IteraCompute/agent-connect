@@ -1,6 +1,6 @@
 "use strict";
 const $ = (id) => document.getElementById(id);
-const icons = {
+const clientIcons = {
   claude: "✳",
   codex: "⌘",
   workbuddy: "W",
@@ -8,16 +8,44 @@ const icons = {
   openclaw: "◈",
   hermes: "H",
 };
-let token =
-  location.hash.slice(1) || sessionStorage.getItem("agent-connect-token") || "";
-if (location.hash) {
+const protocols = {
+  chat: "Chat Completions",
+  responses: "Responses",
+  anthropic: "Anthropic Messages",
+  gemini: "Gemini",
+};
+const caseLabels = {
+  text: "文本回复",
+  stream: "流式输出",
+  "tool-roundtrip": "工具调用往返",
+};
+const modelCatalogs = new Map();
+let token = sessionStorage.getItem("agent-connect-token") || "";
+if (/^#[A-Za-z0-9_-]{43}$/.test(location.hash)) {
+  token = location.hash.slice(1);
   sessionStorage.setItem("agent-connect-token", token);
   history.replaceState(null, "", "/");
 }
 let state,
   selectedClient,
+  resultSelection,
   adding = false,
   working = false;
+function icon(name) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.classList.add("icon");
+  svg.setAttribute("aria-hidden", "true");
+  const use = document.createElementNS(svg.namespaceURI, "use");
+  use.setAttribute("href", "#i-" + name);
+  svg.append(use);
+  return svg;
+}
+function textElement(tag, className, text) {
+  const el = document.createElement(tag);
+  el.className = className;
+  el.textContent = text;
+  return el;
+}
 async function api(path, body) {
   const options = { headers: { "X-Agent-Connect": token } };
   if (body !== undefined) {
@@ -25,68 +53,196 @@ async function api(path, body) {
     options.headers["Content-Type"] = "application/json";
     options.body = JSON.stringify(body);
   }
-  const response = await fetch("/api/" + path, options);
+  let response;
+  try {
+    response = await fetch("/api/" + path, options);
+  } catch {
+    throw new Error(
+      "无法连接本地服务。请确认启动窗口仍在运行，再重新打开页面。",
+    );
+  }
   const data = await response.json();
   if (!response.ok) throw new Error(data.error || "操作未完成，请重试。");
   return data;
 }
-function result(text, kind = "", data) {
-  $("result").textContent = text;
-  $("result").className = kind;
+function result(title, message, kind = "", data) {
+  resultSelection = undefined;
+  $("result").className = "result-box" + (kind ? " " + kind : "");
+  $("result-title").textContent = title;
+  $("result-message").textContent = message;
+  $("result-symbol").replaceChildren(
+    icon(kind === "success" ? "check" : kind === "busy" ? "refresh" : "info"),
+  );
+  $("result-cards").replaceChildren();
+  $("result-cards").hidden = true;
   $("result-details").hidden = !data;
+  $("result-details").open = false;
+  $("details-label").textContent = "查看测试详情";
+  $("details-note").textContent = "仅显示脱敏结果";
+  $("copy-export").hidden = true;
+  $("copy-export").replaceChildren(
+    icon("copy"),
+    document.createTextNode("复制配置"),
+  );
   $("result-json").textContent = data ? JSON.stringify(data, null, 2) : "";
+}
+function updateAvailability() {
+  document.querySelectorAll("button,input,select").forEach((el) => {
+    el.disabled = working || !state;
+  });
+  $("workspace").setAttribute("aria-busy", String(working));
+  if (!state || working) return;
+  const client = state.clients.find((c) => c.id === selectedClient);
+  const matched = selectedProtocols().includes(client.protocol);
+  ["connect", "probe", "smoke", "export"].forEach((id) => {
+    $(id).disabled = !matched;
+  });
+  $("disconnect").disabled = !client.connected;
+  $("provider").disabled = adding;
+  $("add-provider").disabled = adding;
 }
 async function busy(message, work) {
   if (working) return;
   working = true;
-  const fields = [...document.querySelectorAll("button,input,select")];
-  fields.forEach((el) => (el.disabled = true));
-  result(message, "busy");
+  updateAvailability();
+  result("正在处理", message, "busy");
+  let focusId;
   try {
     await work();
   } catch (e) {
-    result(e.message, "error");
+    result("操作未完成", e.message, "error");
+    focusId = e.focusId;
   } finally {
     working = false;
-    document
-      .querySelectorAll("button,input,select")
-      .forEach((el) => (el.disabled = false));
+    updateAvailability();
+    if (focusId) $(focusId).focus();
   }
+}
+function clearErrors() {
+  ["provider-id", "api-key", "model", "base-url"].forEach((id) => {
+    $(id).removeAttribute("aria-invalid");
+    $(id + "-error").hidden = true;
+  });
+}
+function invalid(id, message) {
+  $(id).setAttribute("aria-invalid", "true");
+  $(id + "-error").textContent = message;
+  $(id + "-error").hidden = false;
+  if (id === "base-url") $("advanced").open = true;
+  const error = new Error(message);
+  error.focusId = id;
+  throw error;
+}
+function selectedProtocols() {
+  return [...document.querySelectorAll("[name=protocol]:checked")].map(
+    (el) => el.value,
+  );
+}
+function catalogKey() {
+  return (
+    (adding ? $("provider-id").value.trim() : $("provider").value) +
+    "|" +
+    $("base-url").value.trim()
+  );
+}
+function renderCatalog() {
+  $("model-list").replaceChildren();
+  const models = modelCatalogs.get(catalogKey()) || [];
+  models.forEach((id) => {
+    const option = document.createElement("option");
+    option.value = id;
+    $("model-list").append(option);
+  });
+  $("model-help").textContent = models.length
+    ? `已获取 ${models.length} 个模型，点击输入框可选择，也可直接输入。`
+    : "可直接输入模型 ID，也可从 API 获取列表。";
 }
 function loadProvider() {
   const p = state.settings.providers[$("provider").value];
   if (!p) return;
   adding = false;
+  clearErrors();
   $("new-fields").hidden = true;
+  $("provider-id").value = "";
+  $("provider-name").value = "";
   $("api-key").value = "";
   $("api-key").placeholder = p.has_key
     ? "已保存，留空保留原 key"
     : "填写你的 API key";
-  $("key-status").textContent = p.has_key ? "已保存在本机" : "尚未填写";
   $("model").value = p.model;
   $("base-url").value = p.base_url;
-  document
-    .querySelectorAll("[name=protocol]")
-    .forEach((el) => (el.checked = p.protocols.includes(el.value)));
+  document.querySelectorAll("[name=protocol]").forEach((el) => {
+    el.checked = p.protocols.includes(el.value);
+  });
+  renderCatalog();
   updatePath();
 }
+function selectionSnapshot() {
+  return JSON.stringify([
+    adding ? $("provider-id").value.trim() : $("provider").value,
+    selectedClient,
+    $("model").value.trim(),
+    $("base-url").value.trim(),
+    selectedProtocols(),
+    Boolean($("api-key").value.trim()),
+  ]);
+}
 function updatePath() {
+  if (!state) return;
+  if (resultSelection && resultSelection !== selectionSnapshot()) {
+    result("设置已更改", "请重新测试或导出当前 API、模型与客户端的配置。");
+  }
   const p = state.settings.providers[$("provider").value];
-  const c = state.clients.find((c) => c.id === selectedClient);
+  const client = state.clients.find((c) => c.id === selectedClient);
+  const currentProtocols = selectedProtocols();
+  const matched = currentProtocols.includes(client.protocol);
+  const keyEntered = Boolean($("api-key").value.trim());
+  $("key-status").textContent = keyEntered
+    ? "待保存"
+    : !adding && p.has_key
+      ? "已保存在本机"
+      : "尚未填写";
   $("path-provider").textContent = adding
-    ? $("provider-name").value || "我的 API"
+    ? $("provider-name").value.trim() || "我的 API"
     : p.name;
-  $("path-client").textContent = c.name;
-  $("client-caption").textContent = "连接 " + c.name;
-  $("client-hint").textContent = c.id.startsWith("workbuddy")
+  $("path-model").textContent = $("model").value.trim() || "请选择模型";
+  $("path-client").textContent = client.name;
+  $("path-client-icon").textContent = clientIcons[client.id];
+  $("connect-label").textContent = "连接 " + client.name;
+  $("required-protocol").textContent = protocols[client.protocol];
+  $("protocol-match").textContent = matched ? "协议匹配" : "需要配置";
+  $("protocol-match").classList.toggle("missing", !matched);
+  $("protocol-summary").textContent = `${currentProtocols.length} 种协议`;
+  $("compatibility").hidden = matched;
+  $("compatibility-text").textContent =
+    `此客户端需要 ${protocols[client.protocol]}。请确认 API 支持后，在地址与协议中勾选。`;
+  $("connection-status").textContent = client.connected
+    ? "已配置 · 可恢复"
+    : "尚未连接";
+  $("connection-status").className =
+    "badge " + (client.connected ? "good" : "neutral");
+  $("client-hint").textContent = client.id.startsWith("workbuddy")
     ? "连接后重启 WorkBuddy，在任务中选择 custom-local 模型。"
-    : c.installed
-      ? "自动配置，连接后重启客户端即可使用。"
-      : "尚未检测到安装；可先配置，再安装客户端。";
+    : client.installed
+      ? "自动备份并写入配置，连接后重启客户端即可使用。"
+      : "尚未检测到安装。可以先连接配置，再安装客户端。";
   document.querySelectorAll(".client").forEach((el) => {
-    el.classList.toggle("selected", el.dataset.id === selectedClient);
-    el.setAttribute("aria-pressed", String(el.dataset.id === selectedClient));
+    const selected = el.dataset.id === selectedClient;
+    el.classList.toggle("selected", selected);
+    el.setAttribute("aria-checked", String(selected));
+    el.tabIndex = selected ? 0 : -1;
   });
+  const dirty =
+    adding ||
+    keyEntered ||
+    $("provider").value !== state.settings.selected_provider ||
+    selectedClient !== state.settings.client ||
+    $("model").value.trim() !== p.model ||
+    $("base-url").value.trim() !== p.base_url ||
+    [...currentProtocols].sort().join() !== [...p.protocols].sort().join();
+  $("save-state").textContent = dirty ? "有未保存更改" : "已保存到本机";
+  $("save-state").className = "badge " + (dirty ? "changed" : "neutral");
+  updateAvailability();
 }
 function render(next) {
   const first = !state;
@@ -105,26 +261,62 @@ function render(next) {
     const button = document.createElement("button");
     button.className = "client";
     button.dataset.id = c.id;
-    button.disabled = working;
-    const icon = document.createElement("span");
-    icon.className = "client-icon";
-    icon.textContent = icons[c.id];
-    const labels = document.createElement("span");
-    const name = document.createElement("span");
-    name.className = "client-name";
-    name.textContent = c.name;
-    const status = document.createElement("span");
-    status.className = "client-status";
-    status.textContent = c.connected
-      ? "已连接 · 可恢复"
-      : c.installed
-        ? "已检测到安装"
-        : "可配置 · 未检测到安装";
-    labels.append(name, status);
-    button.append(icon, labels);
+    button.setAttribute("role", "radio");
+    button.setAttribute("aria-label", c.name);
+    const labels = textElement("span", "client-labels", "");
+    labels.append(
+      textElement("span", "client-name", c.name),
+      textElement(
+        "span",
+        "client-type",
+        c.id === "hermes" || c.id === "openclaw" ? "智能体" : "编码工具",
+      ),
+      textElement(
+        "span",
+        "client-status" + (c.connected || c.installed ? " detected" : ""),
+        c.connected
+          ? "已配置 · 可恢复"
+          : c.installed
+            ? "已检测到安装"
+            : "可配置 · 未检测到",
+      ),
+    );
+    const mark = textElement("span", "client-check", "");
+    mark.append(icon("check"));
+    const badge = textElement("span", "client-icon", clientIcons[c.id]);
+    badge.setAttribute("aria-hidden", "true");
+    mark.setAttribute("aria-hidden", "true");
+    button.append(badge, labels, mark);
     button.onclick = () => {
       selectedClient = c.id;
       updatePath();
+    };
+    button.onkeydown = (event) => {
+      const keys = [
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
+        "Home",
+        "End",
+      ];
+      if (!keys.includes(event.key)) return;
+      event.preventDefault();
+      const index = next.clients.findIndex(
+        (item) => item.id === selectedClient,
+      );
+      const at =
+        event.key === "Home"
+          ? 0
+          : event.key === "End"
+            ? next.clients.length - 1
+            : (index +
+                (["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 1) +
+                next.clients.length) %
+              next.clients.length;
+      selectedClient = next.clients[at].id;
+      updatePath();
+      $("clients").children[at].focus();
     };
     $("clients").append(button);
   });
@@ -132,145 +324,275 @@ function render(next) {
     "本地配置：" + next.settings_path.split(/[\\/]/).pop();
   $("settings-location").title = next.settings_path;
   loadProvider();
-  if (
-    first &&
-    next.settings.providers[next.settings.selected_provider].has_key
-  ) {
-    result("已读取本地 API 配置。选择客户端即可连接，或先运行测试。");
-  }
+  if (first && next.settings.providers[next.settings.selected_provider].has_key)
+    result("已读取本地配置", "选择客户端即可连接，也可以先测试 API。");
 }
-function form() {
+function form({ catalog = false, requireKey = false } = {}) {
+  clearErrors();
   const id = adding ? $("provider-id").value.trim() : $("provider").value;
-  if (!id) throw new Error("请填写 API 标识，例如 my-api。");
+  if (!/^[a-z][a-z0-9-]{0,47}$/.test(id))
+    invalid(
+      "provider-id",
+      "标识需以小写字母开头，使用小写字母、数字或短横线，最多 48 个字符。",
+    );
+  if (adding && Object.hasOwn(state.settings.providers, id))
+    invalid("provider-id", "此标识已存在，请换一个标识。");
+  const key = $("api-key").value.trim();
+  if (requireKey && !key && (adding || !state.settings.providers[id].has_key))
+    invalid("api-key", "请先填写此 API 的 key。");
+  if (key && !/^[\x21-\x7e]+$/.test(key))
+    invalid("api-key", "API key 不能包含空格或非英文字符，请检查复制内容。");
+  const base = $("base-url").value.trim();
+  let url;
+  try {
+    url = new URL(base);
+  } catch {
+    invalid(
+      "base-url",
+      "请输入完整 API 地址，例如 https://api.example.com/v1。",
+    );
+  }
+  if (
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    (url.protocol !== "https:" &&
+      !(
+        url.protocol === "http:" &&
+        ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)
+      ))
+  )
+    invalid(
+      "base-url",
+      "请使用 HTTPS 地址（本机接口可用 HTTP），不要包含账号、查询参数或片段。",
+    );
+  const model = $("model").value.trim();
+  if (!catalog && !model)
+    invalid("model", "请选择或输入模型 ID，也可先点击「获取模型」。");
+  if (!selectedProtocols().length) {
+    $("advanced").open = true;
+    throw new Error("请至少选择一种 API 实际支持的协议。");
+  }
   return {
     provider: id,
     client: selectedClient,
     name: adding
-      ? $("provider-name").value.trim()
+      ? $("provider-name").value.trim() || id
       : state.settings.providers[id].name,
-    api_key: $("api-key").value.trim(),
-    base_url: $("base-url").value.trim(),
-    model: $("model").value.trim(),
-    protocols: [...document.querySelectorAll("[name=protocol]:checked")].map(
-      (el) => el.value,
-    ),
+    api_key: key,
+    base_url: base,
+    model,
+    protocols: selectedProtocols(),
   };
 }
-async function save() {
-  render(await api("save", form()));
+async function save(options) {
+  render(await api("save", form(options)));
 }
-function summarize(data, type) {
-  if (data.message) return data.message;
-  if (type === "probe") {
-    const labels = {
-      text: "文本回复",
-      stream: "流式输出",
-      "tool-roundtrip": "工具调用",
-    };
-    const failed = (data.results || []).filter(
-      (item) => item.status !== "passed",
+function showTest(data, type) {
+  const passed = type === "probe" ? data.passed : data.status === "passed";
+  let message = data.message;
+  if (!message)
+    message =
+      type === "probe"
+        ? passed
+          ? "文本回复、完整流式输出和工具调用往返均成功。"
+          : "部分项目未通过。展开详情查看；遇到 429 可稍后重试，Auto 失败时可选择具体模型。"
+        : passed
+          ? "已从实际客户端回复中确认 ITERACONNECT_OK。"
+          : data.status === "not-installed"
+            ? "未检测到客户端，请先安装后重试。"
+            : "客户端实测未通过，请展开详情查看。";
+  const manual =
+    data.status === "manual-required" || data.status === "not-installed";
+  result(
+    passed
+      ? type === "probe"
+        ? "API 测试通过"
+        : "客户端实测通过"
+      : manual
+        ? data.status === "not-installed"
+          ? "尚未检测到客户端"
+          : "需要在客户端继续操作"
+        : "测试未全部通过",
+    message,
+    passed ? "success" : manual ? "" : "error",
+    data,
+  );
+  const cases =
+    type === "probe"
+      ? data.results || []
+      : [{ case: selectedClient, status: data.status, seconds: data.seconds }];
+  cases.forEach((item) => {
+    const ok = item.status === "passed";
+    const card = textElement(
+      "div",
+      "result-card" + (ok ? "" : manual ? " manual" : " failed"),
+      "",
     );
-    return data.passed
-      ? "API 测试通过：文本回复、完整流式输出和工具调用往返均成功。"
-      : "API 测试未全部通过：" +
-          failed.map((item) => labels[item.case] || item.case).join("、") +
-          "。请查看详情；遇到 429 请稍后重试，Auto 失败时可选择具体模型。";
-  }
-  if (data.status === "passed")
-    return "客户端实测通过：已从实际客户端的回复中确认 ITERACONNECT_OK。";
-  if (data.status === "manual-required")
-    return "请在原客户端手动发送测试消息，确认回复。";
-  if (data.status === "not-installed") return "未检测到客户端，请先安装。";
-  return "客户端实测未通过，请查看详情。";
+    const labels = document.createElement("div");
+    labels.append(
+      textElement(
+        "strong",
+        "",
+        type === "probe"
+          ? caseLabels[item.case] || item.case
+          : state.clients.find((c) => c.id === selectedClient).name,
+      ),
+      textElement(
+        "small",
+        "",
+        (ok
+          ? "通过"
+          : item.status === "not-installed"
+            ? "未检测到安装"
+            : manual
+              ? "待手动验证"
+              : "未通过") +
+          (typeof item.seconds === "number"
+            ? ` · ${item.seconds.toFixed(1)} 秒`
+            : ""),
+      ),
+    );
+    card.append(icon(ok ? "check" : "info"), labels);
+    $("result-cards").append(card);
+  });
+  $("result-cards").hidden = cases.length === 0;
+  resultSelection = selectionSnapshot();
 }
 $("provider").onchange = loadProvider;
-$("provider-name").oninput = updatePath;
+["provider-name", "model", "api-key", "base-url", "provider-id"].forEach(
+  (id) => {
+    $(id).oninput = () => {
+      clearErrors();
+      if (["base-url", "provider-id"].includes(id)) renderCatalog();
+      if (id === "api-key") {
+        modelCatalogs.delete(catalogKey());
+        renderCatalog();
+      }
+      updatePath();
+    };
+  },
+);
+document.querySelectorAll("[name=protocol]").forEach((el) => {
+  el.onchange = updatePath;
+});
+$("fix-protocol").onclick = () => {
+  $("advanced").open = true;
+  document
+    .querySelector(
+      `[name=protocol][value="${state.clients.find((c) => c.id === selectedClient).protocol}"]`,
+    )
+    .focus();
+};
 $("add-provider").onclick = () => {
   adding = true;
+  clearErrors();
   $("new-fields").hidden = false;
   $("advanced").open = true;
-  $("api-key").value = "";
-  $("key-status").textContent = "新 API";
+  ["api-key", "provider-id", "provider-name", "base-url", "model"].forEach(
+    (id) => {
+      $(id).value = "";
+    },
+  );
   $("api-key").placeholder = "填写新的 API key";
-  $("base-url").value = "";
-  $("model").value = "";
-  document
-    .querySelectorAll("[name=protocol]")
-    .forEach((el) => (el.checked = el.value === "chat"));
+  document.querySelectorAll("[name=protocol]").forEach((el) => {
+    el.checked = el.value === "chat";
+  });
+  renderCatalog();
   updatePath();
   $("provider-id").focus();
 };
+$("cancel-provider").onclick = loadProvider;
 $("save").onclick = () =>
   busy("正在保存本地设置…", async () => {
     await save();
-    result("API 设置已保存到本机。", "success");
+    result(
+      "设置已保存",
+      "API 设置已保存到本机。选择客户端即可连接。",
+      "success",
+    );
   });
 $("reload").onclick = () =>
   busy("正在重新读取配置文件…", async () => {
     render(await api("reload", {}));
-    result("已重新读取本地配置。", "success");
+    result("配置已更新", "已重新读取本地配置文件。", "success");
   });
 $("models").onclick = () =>
   busy("正在获取当前 API 的模型列表…", async () => {
-    await save();
-    const data = await api("models", {});
-    $("model-list").replaceChildren();
-    data.models.forEach((id) => {
-      const o = document.createElement("option");
-      o.value = id;
-      $("model-list").append(o);
-    });
+    const draft = form({ catalog: true, requireKey: true });
+    const data = await api("models", draft);
+    modelCatalogs.set(catalogKey(), data.models);
+    renderCatalog();
     result(
-      "已获取 " + data.models.length + " 个模型，点击模型输入框可选择。",
-      "success",
+      data.models.length ? "模型列表已更新" : "API 未返回模型列表",
+      data.models.length
+        ? `已获取 ${data.models.length} 个模型。点击模型输入框选择，或直接输入模型 ID。当前设置尚未自动保存。`
+        : "仍可在模型输入框中直接填写 API 提供的模型 ID。",
+      data.models.length ? "success" : "",
     );
   });
 $("connect").onclick = () =>
   busy("正在备份并连接客户端…", async () => {
-    await save();
+    await save({ requireKey: true });
     const data = await api("connect", {});
     render(await api("state"));
-    result(data.message, "success");
+    result("客户端已配置", data.message, "success");
   });
 $("disconnect").onclick = () =>
   busy("正在检查并恢复原配置…", async () => {
     await save();
     const data = await api("disconnect", {});
     render(await api("state"));
-    result(data.message, "success");
+    result("已恢复原配置", data.message, "success");
   });
 $("export").onclick = () =>
   busy("正在生成配置片段…", async () => {
     await save();
     const data = await api("export", {});
-    result(data.message);
+    result("配置片段已生成", data.message);
     $("result-json").textContent = data.fragment;
+    $("details-label").textContent = "查看配置片段";
+    $("details-note").textContent = "仅含本地网关令牌，请在本机使用";
+    $("copy-export").hidden = false;
     $("result-details").hidden = false;
     $("result-details").open = true;
+    resultSelection = selectionSnapshot();
   });
-["probe", "smoke"].forEach(
-  (type) =>
-    ($(type).onclick = () =>
-      busy(
-        type === "probe"
-          ? "正在测试 API 的文本、流式与工具调用，请稍候…"
-          : "正在启动隔离的客户端测试，最长约 90 秒…",
-        async () => {
-          await save();
-          const data = await api(type, {});
-          const ok = data.passed || data.status === "passed";
-          result(
-            summarize(data, type),
-            ok ? "success" : data.status === "manual-required" ? "" : "error",
-            data,
-          );
-        },
-      )),
-);
+$("copy-export").onclick = async () => {
+  try {
+    await navigator.clipboard.writeText($("result-json").textContent);
+    $("copy-export").replaceChildren(
+      icon("check"),
+      document.createTextNode("已复制"),
+    );
+  } catch {
+    $("details-note").textContent =
+      "浏览器未允许复制，请选中下方配置手动复制。";
+  }
+};
+["probe", "smoke"].forEach((type) => {
+  $(type).onclick = () =>
+    busy(
+      type === "probe"
+        ? "正在测试文本、流式与工具调用，请稍候…"
+        : "正在启动隔离的客户端测试，最长约 90 秒…",
+      async () => {
+        await save({ requireKey: true });
+        showTest(await api(type, {}), type);
+      },
+    );
+});
+updateAvailability();
 api("state")
   .then(render)
   .catch((e) => {
     $("fatal").hidden = false;
     $("fatal").textContent = e.message;
-    document.querySelectorAll("button").forEach((el) => (el.disabled = true));
+    $("service-status").classList.add("unavailable");
+    $("service-status").replaceChildren(
+      textElement("span", "status-dot", ""),
+      document.createTextNode("本地服务未连接"),
+    );
+    result("无法读取配置", e.message, "error");
   });
