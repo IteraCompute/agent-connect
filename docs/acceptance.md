@@ -90,6 +90,9 @@ Public repository, Issues and Discussions enabled. Protected `main` requires adm
 CODEOWNER review, passing checks, stale-approval dismissal, latest-push approval and resolved
 conversations; administrators are subject to the rules. The implementation PR is ready for independent review.
 
-GitHub Actions execution is still blocked by organization policy. Base `main` CODEOWNERS still
-needs an independently eligible administrator for the first PR; the PR proposes both existing
-admins. No branch-protection bypass or self-approval was performed. See [governance.md](governance.md).
+On 2026-11-17, the organization Owner enabled Actions for this repository only; default workflow
+permissions remain read-only and workflow PR approval is disabled. GitHub CI results are recorded
+on the PR separately from the local evidence above. Initial base CODEOWNERS names only the PR
+author, so its first-merge bootstrap needs an independently eligible reviewer or an explicitly
+authorized one-time Owner exception. The proposed CODEOWNERS lists both existing administrators.
+See [governance.md](governance.md) and the PR for the current state.

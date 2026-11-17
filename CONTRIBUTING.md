@@ -16,8 +16,10 @@ repository access and no provider secrets. Automated merge is disabled.
 The repository administrators are `@K-3-LT` and `@aikevan`; both are proposed as CODEOWNERS in
 the initial implementation PR. Additional administrators can be added to CODEOWNERS
 through the same reviewed workflow; reviewers must have write access for GitHub to recognize
-their code-owner approval. Authors cannot approve their own pull requests. Never bypass the
-review requirement to resolve this: arrange a separate administrator/reviewer account.
+their code-owner approval. Authors cannot approve their own pull requests. Normal contributions need a separate
+administrator/reviewer account; administrator identity does not count as independent self-review.
 
-See [governance setup](docs/governance.md) for the initial base-branch ownership and organization
-Actions restrictions. Until those are resolved, the initial PR intentionally remains blocked.
+Organization Actions is enabled for this repository, with read-only default workflow tokens and
+no workflow review approval. See [governance setup](docs/governance.md) for the initial base-branch
+ownership dependency and the current first-merge status. Initial setup exceptions require explicit
+Owner approval, preserve required CI and must not become a permanent community-review bypass.
