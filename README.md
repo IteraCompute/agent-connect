@@ -235,6 +235,8 @@ API 工具测试只回传固定字符串，不执行模型生成的命令。客�
 `openai/gpt-6-luna` 的三个原生协议及四个真实 CLI 通过了记录中的检查；WorkBuddy 桌面推理仍待手动验收。
 `Auto` 曾返回 400/429，另一次 Haiku 工具测试曾返回 502，这些失败均保留在[验收记录](docs/acceptance.md)，不会被模拟测试结果覆盖。
 
+[GitHub CI](https://github.com/IteraCompute/agent-connect/actions/runs/44015209371) 已通过 Ubuntu、macOS、Windows × Python 3.11 / 3.14 的单元与模拟后端测试，以及构建、Magpie 与必需检查。跨平台 CI 不替代真实客户端的各平台验收。
+
 ### 读懂界面状态
 
 | 状态 | 含义 |

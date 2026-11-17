@@ -296,6 +296,10 @@ CLIs passed the listed checks with `openai/gpt-6-luna`. WorkBuddy desktop infere
 manual acceptance. Earlier Auto 400/429 and a Haiku tool 502 are retained in the
 [acceptance record](docs/acceptance.md), separately from simulated results.
 
+[GitHub CI](https://github.com/IteraCompute/agent-connect/actions/runs/44015209371) passed unit/fixture
+tests on Ubuntu, macOS and Windows with Python 3.11/3.14, plus quality/build, Magpie and the required
+aggregate check. Cross-platform CI does not replace real-client acceptance on each platform.
+
 ### Read the status labels
 
 | Chinese status | Meaning |

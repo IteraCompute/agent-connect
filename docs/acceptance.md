@@ -57,8 +57,11 @@ and its own five native adapter restore paths. No model key is required for fixt
 
 Ruff check/format, JavaScript syntax and frontend formatting checks pass. The sdist/wheel build
 includes the packaged HTML/CSS/JS assets, launchers and blank template; private key files are excluded.
-Only local Linux execution is claimed. Windows/macOS launchers and CI are supplied; those OS
-results are not inferred from Linux tests.
+Manual real-provider and installed-client acceptance was performed on Linux. Separately, the
+[first enabled GitHub CI run](https://github.com/IteraCompute/agent-connect/actions/runs/44015209371)
+passed on 2026-11-17: Ubuntu, macOS and Windows with Python 3.11/3.14, quality/build, pinned Magpie
+fixture tests and the required aggregate `checks` job. These OS unit/fixture runs do not establish
+real-provider or installed desktop-client acceptance on macOS/Windows.
 
 Hermes stable source: **v0.23.1**, commit
 `3b421578588243f920886e6fe79a6faa87ea026e`. Its official `uv.lock` and dependency overrides were
