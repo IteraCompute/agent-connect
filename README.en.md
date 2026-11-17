@@ -43,19 +43,17 @@ If Windows has no `py` launcher, use `python --version` and `python start.py`, p
 
 ### 2. Download and launch
 
-The initial implementation is on `feat/agent-connect` in [PR #1](https://github.com/IteraCompute/agent-connect/pull/1).
-Before that PR reaches `main`, use these complete commands:
+The initial implementation was merged into the default `main` branch in [PR #1](https://github.com/IteraCompute/agent-connect/pull/1). Download and launch it:
 
 ```bash
-git clone --branch feat/agent-connect https://github.com/IteraCompute/agent-connect.git
+git clone https://github.com/IteraCompute/agent-connect.git
 cd agent-connect
 python3 start.py
 ```
 
 On Windows, replace the last line with `py -3 start.py`. Without Git, download the
-[branch ZIP](https://github.com/IteraCompute/agent-connect/archive/refs/heads/feat/agent-connect.zip),
-extract it, and open the directory containing `start.py`. After the initial merge, you can also
-clone the default `main` branch directly.
+[`main` branch ZIP](https://github.com/IteraCompute/agent-connect/archive/refs/heads/main.zip),
+extract it, and open the directory containing `start.py`.
 
 | Platform | Recommended launch | Alternative |
 | --- | --- | --- |
@@ -379,7 +377,7 @@ app's TOML and advanced CLI's JSON are independent configurations. To update a c
 | Symptom | Check / action |
 | --- | --- |
 | Missing `python3` / `py`, or unsupported version | Install Python 3.11+ and reopen the terminal; on Windows check `python --version` |
-| Missing `start.py` | Use the complete feature branch and enter the extracted/cloned directory; before release, `main` may contain bootstrap files only |
+| Missing `start.py` | Download the default `main` branch and enter the extracted/cloned directory containing the file |
 | Page unavailable / port occupied | Stop the old instance or change both ports; use the full terminal URL if the browser did not open |
 | Management page is unauthorized | Use the URL from this launch; the management token changes after restarting the service |
 | API 401 / 403 | Check key, account and model access; reload after editing the private file |

@@ -91,11 +91,12 @@ from this simulated backend; the real-provider evidence above remains dated 2026
 
 Public repository, Issues and Discussions enabled. Protected `main` requires administrator
 CODEOWNER review, passing checks, stale-approval dismissal, latest-push approval and resolved
-conversations; administrators are subject to the rules. The implementation PR is ready for independent review.
+conversations; administrators are subject to the rules.
 
 On 2026-11-17, the organization Owner enabled Actions for this repository only; default workflow
-permissions remain read-only and workflow PR approval is disabled. GitHub CI results are recorded
-on the PR separately from the local evidence above. Initial base CODEOWNERS names only the PR
-author, so its first-merge bootstrap needs an independently eligible reviewer or an explicitly
-authorized one-time Owner exception. The proposed CODEOWNERS lists both existing administrators.
-See [governance.md](governance.md) and the PR for the current state.
+permissions remain read-only and workflow PR approval is disabled. [PR #1](https://github.com/IteraCompute/agent-connect/pull/1)
+merged on 2026-11-17 after its required CI passed. Its initial base CODEOWNERS named only the PR
+author, so the Owner approved a one-time bootstrap review exception for that merge. The exception
+was removed afterward; `main` now lists both existing administrators in CODEOWNERS and still
+requires independent review. See [governance.md](governance.md) for the first-merge record and
+current review rules. CI remains separate from the real-provider and native-client evidence above.

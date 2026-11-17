@@ -1,4 +1,4 @@
-# Repository governance and first-merge setup
+# Repository governance and first-merge record
 
 [中文说明](#中文说明) · [English](#english)
 
@@ -20,7 +20,7 @@
 页面：[组织 Actions 设置](https://github.com/organizations/IteraCompute/settings/actions)。
 权限范围说明见 [GitHub Actions permissions API](https://docs.github.com/en/rest/actions/permissions#get-github-actions-permissions-for-an-organization)。
 
-### 为什么管理员也会被阻止合并
+### 首次合并与当前审核规则
 
 `main` 的保护规则明确包含 `enforce_admins=true`，所以管理员也要满足：
 
@@ -30,12 +30,10 @@
 4. 禁止 force push、删除主分支，自动合并关闭。
 
 首次初始化的 `main` 仅将 `K-3-LT` 列为 CODEOWNER，而 PR #1 的作者和推送者也是该账号。
-GitHub 按 **base 分支**识别 CODEOWNERS，并禁止作者自审；PR 中增加 `aikevan` 在进入 `main` 前不会解除这个初始死锁。
-当前实现已将两名既有管理员 `K-3-LT`、`aikevan` 都列入 CODEOWNERS，以支持后续独立管理员审核；没有授予其他人管理员权限。
-
-正常初始化方式是由另一管理员作为作者和最近推送者发起初始化 PR，经当前 CODEOWNER 独立审核，并通过 CI。
-如果 Owner 选择对当前 PR 做一次初始化例外，必须先明确批准该例外；它应只针对命名管理员和这一次合并，保留必需 CI，并在合并后立即恢复审核限制。
-这不是允许社区贡献绕过审核的长期策略。
+GitHub 按 **base 分支**识别 CODEOWNERS，并禁止作者自审；PR 中增加 `aikevan` 在合并前无法解除这个初始依赖。
+Owner 对 PR #1 的指定提交批准了一次性审核例外；必需 CI 仍通过，合并后立即移除例外并恢复原保护设置。
+`main` 现已将两名既有管理员 `K-3-LT`、`aikevan` 列入 CODEOWNERS，后续 PR 继续要求独立管理员审核。
+这次例外没有变成社区贡献可绕过审核的长期规则，也没有授予其他人管理员权限。
 
 ### 审核与审计
 
@@ -47,8 +45,8 @@ python scripts/check_governance.py
 ```
 
 审计检查仓库公开性、管理员角色、主分支保护、base CODEOWNERS 与 Actions 状态。
-首次 CODEOWNERS 尚未进入 `main` 时，该项会报告未完成；这与组织 Actions 已修复是不同的状态。
-合并后的当前状态和实际检查结果以 [PR #1](https://github.com/IteraCompute/agent-connect/pull/1) 与 GitHub 设置为准。
+PR #1 合并前，base CODEOWNERS 项会报告未完成；合并后的治理检查已通过。
+当前状态以 [PR #1](https://github.com/IteraCompute/agent-connect/pull/1)、`main` 及 GitHub 设置为准。
 
 ## English
 
@@ -72,21 +70,19 @@ stale-review dismissal, approval of the latest reviewable push by someone else, 
 status against the current base, and resolved conversations. Force pushes and main deletion are
 disabled, and automatic merge is off.
 
-Initial base `main` names only `K-3-LT` as CODEOWNER; that account also authored and pushed PR #1.
+Initial base `main` named only `K-3-LT` as CODEOWNER; that account also authored and pushed PR #1.
 GitHub uses the base branch's CODEOWNERS and does not permit author self-approval. Adding `aikevan`
-inside the PR alone cannot resolve that bootstrap dependency. The proposed CODEOWNERS lists both
-existing administrators so future changes have an independently eligible administrator. No new
-administrator has been granted access.
+inside the PR alone could not resolve that bootstrap dependency. The Owner approved a one-time
+review exception for the specified PR #1 head. Required CI passed; the exception was removed and
+the original protection settings restored immediately after the merge.
+Current `main` lists both existing administrators in CODEOWNERS, so future PRs still require
+independent administrator review. No new administrator was granted access, and the first-merge
+exception is not a permanent bypass for community contributions.
 
-A normal bootstrap can be authored and last pushed by another administrator, then independently
-reviewed by the existing CODEOWNER with CI passing. An Owner-authorized initial-merge exception,
-if explicitly approved, must be limited to a named administrator and that one merge, retain the
-required CI, and restore review restrictions immediately afterward. It is not a permanent bypass
-for community contributions.
-
-Run `python scripts/check_governance.py` after setup. Before the initial ownership change reaches
-main, its base-ownership audit remains pending even though Actions has been repaired. The current
-PR and repository settings are the authoritative live state.
+Run `python scripts/check_governance.py` to check the current repository settings. Before PR #1
+merged, its base-ownership audit was pending even after Actions was repaired; the post-merge
+governance audit passed. The merged [PR #1](https://github.com/IteraCompute/agent-connect/pull/1),
+current `main` and repository settings are the authoritative live state.
 
 References:
 

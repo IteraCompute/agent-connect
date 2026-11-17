@@ -38,17 +38,15 @@ Windows 没有 `py` 启动器时，可使用 `python --version` 和 `python star
 
 ### 2. 下载并启动
 
-首次发布的代码位于 [PR #1](https://github.com/IteraCompute/agent-connect/pull/1) 的 `feat/agent-connect` 分支。
-在它合并到 `main` 前，使用下面的完整命令：
+首次发布的代码已通过 [PR #1](https://github.com/IteraCompute/agent-connect/pull/1) 合并到默认的 `main` 分支。下载并启动：
 
 ```bash
-git clone --branch feat/agent-connect https://github.com/IteraCompute/agent-connect.git
+git clone https://github.com/IteraCompute/agent-connect.git
 cd agent-connect
 python3 start.py
 ```
 
-Windows 将最后一行换成 `py -3 start.py`。不使用 Git 时，可下载[该分支的 ZIP](https://github.com/IteraCompute/agent-connect/archive/refs/heads/feat/agent-connect.zip)，解压后进入包含 `start.py` 的目录。
-首次发布合并后，也可直接克隆默认的 `main` 分支。
+Windows 将最后一行换成 `py -3 start.py`。不使用 Git 时，可下载 [`main` 分支 ZIP](https://github.com/IteraCompute/agent-connect/archive/refs/heads/main.zip)，解压后进入包含 `start.py` 的目录。
 
 | 系统 | 推荐启动方式 | 可选启动方式 |
 | --- | --- | --- |
@@ -307,7 +305,7 @@ itera-connect app --settings /absolute/path/to/private.toml
 | 现象 | 检查与处理 |
 | --- | --- |
 | `python3` / `py` 不存在，或提示版本过低 | 安装 Python 3.11+，重新打开终端；Windows 可检查 `python --version` |
-| 找不到 `start.py` | 确认解压/克隆的是完整功能分支，并进入文件所在目录；发布前 `main` 可能只有初始化文件 |
+| 找不到 `start.py` | 确认从默认的 `main` 分支下载，并进入解压或克隆后包含该文件的目录 |
 | 页面打不开、地址占用 | 停止旧实例，或使用上面的两个端口参数；浏览器未打开时复制终端完整地址 |
 | 本地页面提示未授权 | 使用本次启动打印的完整地址；重启服务后管理令牌会变化 |
 | API 返回 401 / 403 | 核对 key、账号和模型权限；修改文件后点“重新读取” |
