@@ -1,0 +1,11 @@
+# 复制为 agent-connect.local.toml，或直接打开客户端填写。
+# 只需要把下面 api_key 的空引号填好；这个本地文件不会提交到 GitHub。
+selected_provider = "iteracompute"
+client = "claude"
+
+[providers.iteracompute]
+name = "IteraCompute"
+api_key = ""
+base_url = "https://api.iteracompute.com"
+model = "openai/gpt-6-luna"
+protocols = ["chat", "responses", "anthropic"]

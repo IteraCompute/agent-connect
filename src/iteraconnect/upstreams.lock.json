@@ -1,0 +1,49 @@
+{
+  "magpie": {
+    "repository": "https://github.com/yetone/magpie",
+    "commit": "187d067241d891b0603358537f7ef8909a7599a7",
+    "version": "v0.1.4314",
+    "assets": {
+      "magpie-cli-android-arm64": {
+        "url": "https://github.com/yetone/magpie-releases/releases/download/v0.1.4314/magpie-cli-android-arm64",
+        "sha256": "7cb7b6c9c0bb477d27a6738a9dd60defcf91adffb49b50524c03459507edc4ca",
+        "size": 91423016
+      },
+      "magpie-cli-darwin-amd64": {
+        "url": "https://github.com/yetone/magpie-releases/releases/download/v0.1.4314/magpie-cli-darwin-amd64",
+        "sha256": "6b10a255528a1d2d84fd5b83f48e2af919afeec07e47dee0b6f510ad81d4d420",
+        "size": 93645984
+      },
+      "magpie-cli-darwin-arm64": {
+        "url": "https://github.com/yetone/magpie-releases/releases/download/v0.1.4314/magpie-cli-darwin-arm64",
+        "sha256": "74c373cf8498dced6e407168c8c5f859fe7a291deecadd474966b777eff56e32",
+        "size": 86917890
+      },
+      "magpie-cli-linux-amd64": {
+        "url": "https://github.com/yetone/magpie-releases/releases/download/v0.1.4314/magpie-cli-linux-amd64",
+        "sha256": "b1d88d7afd5e211d8992273e906455c11ea84cac31e764d47af20ac4d0a25339",
+        "size": 92176546
+      },
+      "magpie-cli-linux-arm64": {
+        "url": "https://github.com/yetone/magpie-releases/releases/download/v0.1.4314/magpie-cli-linux-arm64",
+        "sha256": "a31311b0540e09470cf2c3a75f794ee42eff6145fe3b4d6c56bc00b9a0dadbdd",
+        "size": 84803746
+      },
+      "magpie-cli-windows-amd64.exe": {
+        "url": "https://github.com/yetone/magpie-releases/releases/download/v0.1.4314/magpie-cli-windows-amd64.exe",
+        "sha256": "c017233f9643339ff3d640d86f619765bf33a110d5ccffdf9b44e390cf1d826c",
+        "size": 93173248
+      },
+      "magpie-cli-windows-arm64.exe": {
+        "url": "https://github.com/yetone/magpie-releases/releases/download/v0.1.4314/magpie-cli-windows-arm64.exe",
+        "sha256": "bd9469f81111cea0dfdd41d6db7417f835e339271c6c9c07132f852835c24ac9",
+        "size": 85015040
+      }
+    }
+  },
+  "cc-switch": {
+    "repository": "https://github.com/farion1231/cc-switch",
+    "commit": "09acca04941a359096bb16ea4fa4073c5e2c46e5",
+    "license": "MIT"
+  }
+}

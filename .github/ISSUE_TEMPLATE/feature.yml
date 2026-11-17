@@ -1,0 +1,10 @@
+name: Feature request
+description: Suggest a provider, agent or workflow improvement
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Explain the use case, relevant upstream links, and expected behavior. Do not include credentials.
+    validations:
+      required: true
