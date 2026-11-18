@@ -4,7 +4,7 @@
 
 [**中文**](README.md) | [**English**](README.en.md)
 
-一个在本机运行的轻量连接工具，让 Claude Code、Codex、WorkBuddy、WorkBuddy AI、OpenClaw 和 Hermes 使用你选择的模型 API。
+一个在本机运行的轻量连接工具，让 Claude Code、Codex、WorkBuddy、WorkBuddy AI、Visual Studio、VS Code、OpenClaw 和 Hermes 使用你选择的模型 API。
 默认提供 IteraCompute，也可以保存和切换其他兼容服务。界面、配置管理和转发均为独立实现，没有复制 CC Switch 或 Magpie 的应用代码。
 正常使用只需要 **Python 3.11+**；无需 pip install、Node.js、CC Switch 或 Magpie。
 
@@ -38,17 +38,15 @@ Windows 没有 `py` 启动器时，可使用 `python --version` 和 `python star
 
 ### 2. 下载并启动
 
-首次发布的代码位于 [PR #1](https://github.com/IteraCompute/agent-connect/pull/1) 的 `feat/agent-connect` 分支。
-在它合并到 `main` 前，使用下面的完整命令：
+首次发布的代码已通过 [PR #1](https://github.com/IteraCompute/agent-connect/pull/1) 合并到默认的 `main` 分支。下载并启动：
 
 ```bash
-git clone --branch feat/agent-connect https://github.com/IteraCompute/agent-connect.git
+git clone https://github.com/IteraCompute/agent-connect.git
 cd agent-connect
 python3 start.py
 ```
 
-Windows 将最后一行换成 `py -3 start.py`。不使用 Git 时，可下载[该分支的 ZIP](https://github.com/IteraCompute/agent-connect/archive/refs/heads/feat/agent-connect.zip)，解压后进入包含 `start.py` 的目录。
-首次发布合并后，也可直接克隆默认的 `main` 分支。
+Windows 将最后一行换成 `py -3 start.py`。不使用 Git 时，可下载 [`main` 分支 ZIP](https://github.com/IteraCompute/agent-connect/archive/refs/heads/main.zip)，解压后进入包含 `start.py` 的目录。
 
 | 系统 | 推荐启动方式 | 可选启动方式 |
 | --- | --- | --- |
@@ -72,8 +70,8 @@ Windows 将最后一行换成 `py -3 start.py`。不使用 Git 时，可下载[�
 
 1. 点击需要使用的客户端卡片，例如 **Claude Code**。
 2. 检查“本次连接”的 API、模型与协议。显示 **协议匹配** 后，点击 **连接 Claude Code** 等对应按钮。
-3. Agent Connect 会备份原配置，并写入这个客户端的用户配置。完全退出并重新启动对应客户端，再新建会话。
-4. WorkBuddy / WorkBuddy AI 还需要在任务的模型菜单中选择新增的 `custom-local` 模型，详见[客户端操作](#连接不同的客户端)。
+3. 对标有“自动写入配置”的软件，Agent Connect 会备份原配置，并写入这个客户端的用户配置。完全退出并重新启动对应客户端，再新建会话。
+4. Visual Studio 选择 **获取 Visual Studio 接入信息**，在 IDE 内添加模型。VS Code 选择 **连接 VS Code**，重新加载后在聊天中选模型。WorkBuddy / WorkBuddy AI 需要在任务的模型菜单中选择新增的 `custom-local` 模型，详见[客户端操作](#连接不同的客户端)。
 
 使用客户端期间，请保持 Agent Connect 的启动终端运行。关闭浏览器标签页不会停止服务；在启动终端按 `Ctrl+C` 才会停止。
 下次执行同一个启动命令即可读取已保存的设置。仅重新启动 Agent Connect、地址和模型都没有变化时，无需重复填写 key。
@@ -101,7 +99,7 @@ protocols = ["chat", "responses", "anthropic"]
 | 字段 | 用途 |
 | --- | --- |
 | `selected_provider` | 本次使用的 API 标识，须与某个 `[providers.<标识>]` 一致 |
-| `client` | `claude`、`codex`、`workbuddy`、`workbuddy-ai`、`openclaw` 或 `hermes` |
+| `client` | `claude`、`codex`、`workbuddy`、`workbuddy-ai`、`visual-studio`、`vscode`、`openclaw` 或 `hermes` |
 | `name` | 界面显示名称 |
 | `api_key` | 此服务商的凭据；不会返回给网页或写入客户端配置 |
 | `base_url` | API 根地址或 OpenAI 兼容的 `/v1` 地址 |
@@ -132,8 +130,8 @@ protocols = ["chat", "responses", "anthropic"]
 
 | API 类型 | 地址示例 | 勾选的协议 | 可直接接入的客户端 |
 | --- | --- | --- | --- |
-| OpenAI Chat 兼容 | `https://api.example.com/v1` | `chat` | WorkBuddy、WorkBuddy AI、OpenClaw、Hermes |
-| OpenAI Responses 兼容 | `https://api.example.com/v1` | `responses` | Codex |
+| OpenAI Chat 兼容 | `https://api.example.com/v1` | `chat` | WorkBuddy、WorkBuddy AI、VS Code、Visual Studio、OpenClaw、Hermes |
+| OpenAI Responses 兼容 | `https://api.example.com/v1` | `responses` | Codex CLI、VS Code |
 | Anthropic Messages 兼容 | `https://api.example.com` | `anthropic` | Claude Code |
 | 同时提供多个原生协议 | 供应商的 API 基地址 | 只勾选实际提供的协议 | 对应协议的客户端 |
 | 本地 OpenAI 兼容服务 | `http://127.0.0.1:你的端口/v1` | 按服务能力勾选 | 对应协议的客户端 |
@@ -154,18 +152,20 @@ anthropic = "https://api.example.com/anthropic"
 
 本地转发保留原生协议，不会自动把 Chat 转换为 Responses 或 Messages。
 只有 Chat 的服务不能直接供 Claude Code 或 Codex 使用；需要转换时，参阅[可选 Magpie 高级入口](docs/advanced.md)。
-配置支持 Gemini 基地址，但当前六个简化版客户端卡片使用的是 Chat、Responses 或 Messages；Gemini 专用接入见[覆盖范围](docs/coverage.md)。
+配置支持 Gemini 基地址，但当前八个客户端入口使用的是 Chat、Responses 或 Messages；Gemini 专用接入见[覆盖范围](docs/coverage.md)。
 
 ## 连接不同的客户端
 
-以下是简化工作台的直接配置方式。无需额外向客户端填写供应商 key；客户端使用本地网关令牌，由 Agent Connect 转发请求。
+工作台提供以下接入方式。无需额外向客户端填写供应商 key；客户端使用本地网关令牌，由 Agent Connect 转发请求。
 
-| 客户端 | 所需原生协议 | 默认修改的用户配置 |
+| 客户端 | 所需原生协议 | 配置位置或操作入口 |
 | --- | --- | --- |
 | Claude Code | Anthropic Messages | `~/.claude/settings.json` |
 | Codex CLI | OpenAI Responses | `~/.codex/config.toml` |
 | WorkBuddy | OpenAI Chat Completions | `~/.workbuddy/models.json` |
 | WorkBuddy AI | OpenAI Chat Completions | `~/.workbuddy-ai/models.json` |
+| Visual Studio（Windows） | OpenAI Chat Completions | Copilot Chat → 管理模型 → 添加模型 |
+| VS Code（桌面稳定版） | 优先 OpenAI Responses，也支持 Chat Completions | 用户配置目录下的 `chatLanguageModels.json` |
 | OpenClaw | OpenAI Chat Completions | `~/.openclaw/openclaw.json` |
 | Hermes | OpenAI Chat Completions | `~/.hermes/config.yaml` |
 
@@ -179,7 +179,7 @@ anthropic = "https://api.example.com/anthropic"
 
 ### Codex
 
-选择 **Codex** 并连接，再重新启动 `codex`。适配器配置名为 `iteraconnect` 的 Responses 提供方及所选模型。
+选择 **Codex CLI** 并连接，再重新启动 `codex`。适配器配置名为 `iteraconnect` 的 Responses 提供方及所选模型。
 如果用户文件中已经有来源不明的同名提供方，程序会报错并保留原文件；请改名后重试，或使用 **导出配置** 手动合并。
 这里只验证了 Codex CLI；不把 CLI 测试结果当作其他桌面、IDE 或云端运行方式的验收结果。
 
@@ -190,6 +190,14 @@ anthropic = "https://api.example.com/anthropic"
 模型显示名称包含 `Agent Connect · 模型ID`。现有模型会保留，新增配置的 `vendor` 为 `iteraconnect`。
 
 工作台会提示在原应用手动验证，因为当前没有自动执行桌面应用推理的测试。仅配置写入成功不算真实接入通过。
+
+### Visual Studio（Windows）
+
+打开 **获取 Visual Studio 接入信息**，逐项复制地址、模型 ID 和本地网关令牌。在 Visual Studio 2026 18.10 或更高版本的 Copilot Chat 中打开“管理模型”，添加 Custom Endpoint 或支持自定义地址的 OpenAI，选择 Completions 格式。在 Agent 模式开启新对话并选择该模型。需要移除时，在同一菜单删除端点。[微软模型管理指南](https://learn.microsoft.com/en-us/visualstudio/ide/copilot-select-add-models?view=visualstudio)
+
+### VS Code
+
+在与 Agent Connect 同一台设备上的 VS Code 桌面稳定版使用 Copilot Chat 的 Custom Endpoint。服务商声明支持 Responses 时工作台优先使用它，只提供 Chat 时自动配置 Chat Completions。点击 **连接 VS Code**，重新加载窗口，在本地聊天的模型菜单中选择 Agent Connect 下的目标模型。默认写入默认配置文件（profile）。使用命名配置文件或便携版时，把 `ITERACONNECT_VSCODE_USER_DIR` 指向该配置文件中存放 `chatLanguageModels.json` 的目录，再启动工作台。[VS Code 模型设置](https://code.visualstudio.com/docs/agent-customization/language-models)
 
 ### OpenClaw
 
@@ -213,7 +221,7 @@ anthropic = "https://api.example.com/anthropic"
 | **获取模型** | 供应商模型目录 | 一次目录请求，不进行生成，不保存草稿 |
 | **测试 API** | 所选客户端协议的文本、完整 SSE、工具调用与结果回传 | 最多 4 次生成请求，每次输出预算 256 token |
 | **客户端实测** | 启动已安装的 Claude Code / Codex / OpenClaw / Hermes，检查实际回复 | 会产生 API 用量；临时配置、独立目录，不复制日常登录和聊天 |
-| WorkBuddy / WorkBuddy AI | 原应用内发送消息与工具任务 | 需手动验收，工作台会明确提示 |
+| **查看实测步骤**（WorkBuddy 两版、VS Code、Visual Studio） | 原应用内发送消息与工具任务 | 需手动验收，工作台会明确提示 |
 
 推荐顺序：
 
@@ -229,6 +237,8 @@ anthropic = "https://api.example.com/anthropic"
 
 API 工具测试只回传固定字符串，不执行模型生成的命令。客户端单轮回复通过，不代表它的完整工具循环、长会话、图像、权限或异常恢复均已验收。
 
+2026-11-18 逐个客户端的结果、测试环境与复跑命令见[本轮验收记录](docs/client-setup-acceptance.md)。
+
 ![文本、流式与工具调用的独立结果卡](docs/images/test-passed.jpg)
 
 此结果卡截图使用**本地模拟后端**展示界面。真实 IteraCompute 验收发生于 2026-11-16：
@@ -243,7 +253,7 @@ API 工具测试只回传固定字符串，不执行模型生成的命令。客�
 | --- | --- |
 | 有未保存更改 | 修改了 API、模型、协议或客户端；连接、导出和测试会自动保存 |
 | 协议匹配 / 需要配置 | 只检查声明的协议；缺少协议时连接与测试不可用，可点“检查协议”定位 |
-| 已检测到安装 | 发现命令或配置目录，仍需实测确认能否执行 |
+| 已检测到安装 | 在 PATH 中找到启动命令。仅找到目录时单独显示“发现配置目录” |
 | 已配置 · 可恢复 | 存在原配置备份，不等于当前模型已通过推理测试 |
 | API 测试通过 | 三项协议检查通过；报告默认收起，可展开查看脱敏详情 |
 | 客户端实测通过 | 从真实客户端输出中确认了预期回复 |
@@ -258,7 +268,7 @@ API 工具测试只回传固定字符串，不执行模型生成的命令。客�
 已连接的客户端仍使用它最近一次连接时写入的服务商和模型；修改同一服务商的 key / 地址会影响本地转发。
 不要删除仍被客户端使用的服务商配置。使用多个配置管理器前，先恢复原配置，避免相互覆盖。
 
-**恢复：** 选中目标客户端，点击 **恢复原配置**，再重启客户端。
+**恢复：** 对自动写入的软件，选中目标客户端，点击 **恢复原配置**，再重启客户端。
 第一次连接前会保存原始内容；重复连接仍保留这份原始备份。原文件原本不存在时，恢复会移除由本工具创建的文件。
 
 如果客户端或其他工具在连接后改写了该文件，自动恢复会停止，避免覆盖后续修改。请对照 `native-backups` 中的备份手动合并；不要为了恢复而直接删除整个客户端配置目录。
@@ -307,7 +317,7 @@ itera-connect app --settings /absolute/path/to/private.toml
 | 现象 | 检查与处理 |
 | --- | --- |
 | `python3` / `py` 不存在，或提示版本过低 | 安装 Python 3.11+，重新打开终端；Windows 可检查 `python --version` |
-| 找不到 `start.py` | 确认解压/克隆的是完整功能分支，并进入文件所在目录；发布前 `main` 可能只有初始化文件 |
+| 找不到 `start.py` | 确认从默认的 `main` 分支下载，并进入解压或克隆后包含该文件的目录 |
 | 页面打不开、地址占用 | 停止旧实例，或使用上面的两个端口参数；浏览器未打开时复制终端完整地址 |
 | 本地页面提示未授权 | 使用本次启动打印的完整地址；重启服务后管理令牌会变化 |
 | API 返回 401 / 403 | 核对 key、账号和模型权限；修改文件后点“重新读取” |

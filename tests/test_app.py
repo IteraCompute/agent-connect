@@ -11,6 +11,7 @@ import tomllib
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+from urllib.request import Request, urlopen
 
 from iteraconnect.app import App
 from iteraconnect.config import DEFAULT, ConnectError
@@ -86,6 +87,7 @@ class NativeEditorTests(unittest.TestCase):
             "codex": '# a comment\nmodel = "old"\n[history]\npersistence = "none"\n',
             "workbuddy": '[{"id":"mine","vendor":"mine","enabled":false}]\n',
             "workbuddy-ai": '[{"id":"mine","vendor":"mine","enabled":false}]\n',
+            "vscode": '[{"vendor":"mine","models":[{"id":"keep"}]}]\n',
             "openclaw": '{"messages":{"responsePrefix":"keep"},"agents":{"defaults":{"models":{"mine/old":{}}}}}\n',
             "hermes": "# my config\nmodel:\n  provider: openrouter\n  default: old\nui:\n  theme: dark",
         }
@@ -152,13 +154,67 @@ class NativeEditorTests(unittest.TestCase):
             '{"models":[{"id":"mine","vendor":"mine"}],"availableModels":["mine"],"theme":"dark"}'
         )
         data = json.loads(render_native("workbuddy", text, DEFAULT, "iteracompute", MODEL))
-        self.assertEqual(data["availableModels"], ["mine"])
+        self.assertEqual(data["availableModels"], ["mine", "iteracompute/" + MODEL])
         self.assertEqual(data["theme"], "dark")
         self.assertEqual(len(data["models"]), 2)
         with self.assertRaises(ConnectError):
             render_native(
                 "claude", '{"env":{},"env":{"KEEP":"yes"}}', DEFAULT, "iteracompute", MODEL
             )
+
+    def test_workbuddy_picker_survives_switches_and_respects_unrestricted_lists(self):
+        for target in ("workbuddy", "workbuddy-ai"):
+            for allowed in ([], ["mine"], None):
+                with self.subTest(target=target, allowed=allowed):
+                    seed = {"models": [{"id": "mine"}]}
+                    if allowed is not None:
+                        seed["availableModels"] = allowed
+                    first = render_native(target, json.dumps(seed), DEFAULT, "iteracompute", MODEL)
+                    updated = json.loads(
+                        render_native(target, first, DEFAULT, "iteracompute", "new/model")
+                    )
+                    expected = ["mine", "iteracompute/new/model"] if allowed else allowed
+                    self.assertEqual(updated.get("availableModels"), expected)
+                    self.assertEqual(
+                        [r["id"] for r in updated["models"]], ["mine", "iteracompute/new/model"]
+                    )
+            with self.assertRaises(ConnectError):
+                render_native(target, '[{"id":"iteracompute/dup"}]', DEFAULT, "iteracompute", "dup")
+
+    def test_codex_root_after_array_and_comment_preserves_nested_settings(self):
+        original = '# models [example]\nfeatures_list = ["keep"]\nmodel = "old"\n[profiles.test]\nmodel="keep"\n'
+        edited = tomllib.loads(render_native("codex", original, DEFAULT, "iteracompute", MODEL))
+        self.assertEqual(edited["model"], MODEL)
+        self.assertEqual(edited["profiles"]["test"]["model"], "keep")
+
+    def test_vscode_jsonc_preservation_switch_conflicts_and_exact_restore(self):
+        with tempfile.TemporaryDirectory() as directory:
+            home = Path(directory)
+            backups = home / "backups"
+            path = client_path("vscode", home)
+            path.parent.mkdir(parents=True)
+            original = (
+                b'// [ providers ]\r\n[ /* keep */ {"url":"https://mine/a,]", "models":[],}, ]\r\n'
+            )
+            path.write_bytes(original)
+            for model in ("first", "next/model"):
+                connect_native("vscode", DEFAULT, "iteracompute", model, home, backups)
+                raw = path.read_bytes()
+                self.assertIn(b'/* keep */ {"url":"https://mine/a,]", "models":[],},', raw)
+                self.assertEqual(raw.count(b'"vendor": "customendpoint"'), 1)
+                self.assertIn(model.encode(), raw)
+            path.write_bytes(raw + b"// new edit")
+            with self.assertRaises(ConnectError):
+                disconnect_native("vscode", home, backups)
+            path.write_bytes(raw)
+            disconnect_native("vscode", home, backups)
+            self.assertEqual(path.read_bytes(), original)
+            for seed in ('[{"name":"Agent Connect"}]', "[,]", "{}", "[/* broken]"):
+                path.write_text(seed)
+                with self.assertRaises(ConnectError):
+                    connect_native("vscode", DEFAULT, "iteracompute", MODEL, home, backups)
+                self.assertEqual(path.read_text(), seed)
+                self.assertFalse((backups / "vscode.json").exists())
 
     def test_hermes_stale_endpoint_and_key_command_cannot_override_selection(self):
         values = (
@@ -330,6 +386,124 @@ class ControlPanelTests(unittest.TestCase):
         self.assertEqual(self.app.settings_path.read_bytes(), original)
         self.assertEqual(self.app.data["providers"]["iteracompute"]["api_key"], VENDOR_KEY)
         self.assertEqual(dict(os.environ), before_env)
+
+    def test_visual_studio_guided_setup_is_scoped_and_never_records_a_connection(self):
+        selected = {"provider": "iteracompute", "client": "visual-studio", "api_key": VENDOR_KEY}
+        self.assertEqual(self.call("/api/connect", selected, auth=False)[0], 401)
+        status, raw = self.call("/api/connect", selected)
+        self.assertEqual(status, 200)
+        self.assertNotIn(VENDOR_KEY.encode(), raw)
+        guide = json.loads(raw)
+        self.assertEqual(guide["local_key"], LOCAL_KEY)
+        self.assertEqual(
+            guide["base_url"], f"http://127.0.0.1:{self.app.relay.server_port}/p/iteracompute/v1"
+        )
+        self.assertEqual(guide["setup"], "guided")
+        self.assertNotIn(LOCAL_KEY.encode(), self.call("/api/state")[1])
+        client = next(c for c in guide["state"]["clients"] if c["id"] == "visual-studio")
+        self.assertIsNone(client["config_path"])
+        self.assertFalse(client["connected"])
+        self.assertTrue(client["manual_test"])
+        self.assertEqual(json.loads(self.call("/api/smoke", {})[1])["status"], "manual-required")
+        for route in ("disconnect", "export"):
+            self.assertEqual(self.call("/api/" + route, {})[0], 400)
+        status, failed = self.call("/api/connect", {**selected, "protocols": ["responses"]})
+        self.assertEqual(status, 400)
+        self.assertNotIn(VENDOR_KEY.encode(), failed)
+        self.assertEqual(json.loads(failed)["state"]["settings"]["client"], "visual-studio")
+
+    def test_desktop_connection_values_route_model_catalog_and_chat_to_fixture(self):
+        from iteraconnect.diagnostics import payload, send
+
+        worker = threading.Thread(target=self.app.relay.serve_forever, daemon=True)
+        worker.start()
+        self.addCleanup(self.app.relay.shutdown)
+        base = Path(self.folder.name)
+        dirs = {
+            "WORKBUDDY_CONFIG_DIR": str(base / "wb"),
+            "WORKBUDDY_AI_CONFIG_DIR": str(base / "wbai"),
+            "ITERACONNECT_VSCODE_USER_DIR": str(base / "vs-code"),
+        }
+        with stack() as (config, vendor, _gateway), patch.dict(os.environ, dirs):
+            for target in ("visual-studio", "vscode", "workbuddy", "workbuddy-ai"):
+                with self.subTest(target=target):
+                    status, raw = self.call(
+                        "/api/connect",
+                        {
+                            "provider": "custom",
+                            "client": target,
+                            "name": "Fixture",
+                            "model": MODEL,
+                            "protocols": ["chat"],
+                            "base_url": config["providers"]["iteracompute"]["endpoints"]["chat"],
+                            "api_key": VENDOR_KEY,
+                        },
+                    )
+                    self.assertEqual(status, 200)
+                    if target == "visual-studio":
+                        guide = json.loads(raw)
+                        key, model = guide["local_key"], guide["model"]
+                        url = guide["base_url"] + "/chat/completions"
+                        request = Request(
+                            guide["base_url"] + "/models",
+                            headers={"Authorization": "Bearer " + key},
+                        )
+                        with urlopen(request, timeout=5) as response:
+                            self.assertIn(MODEL, [row["id"] for row in json.load(response)["data"]])
+                    else:
+                        row = json.loads(client_path(target).read_text())[0]
+                        if target == "vscode":
+                            route = row["models"][0]
+                            key = route["requestHeaders"]["Authorization"].removeprefix("Bearer ")
+                        else:
+                            route, key = row, row["apiKey"]
+                        model, url = route["id"], route["url"]
+                    result = send(url, key, "chat", payload("chat", model, 256, False), 5)
+                    self.assertEqual(result["choices"][0]["message"]["content"], "ITERACONNECT_OK")
+                    self.assertTrue(
+                        vendor.requests[-1][2]["Authorization"] == "Bearer " + VENDOR_KEY
+                    )
+                    self.assertEqual(vendor.requests[-1][3]["model"], MODEL)
+
+    def test_one_click_actions_target_the_submitting_tab_and_restore_without_saving_drafts(self):
+        folder = Path(self.folder.name)
+        with patch.dict(
+            os.environ,
+            {
+                "ITERACONNECT_VSCODE_USER_DIR": str(folder / "Code/User"),
+                "CODEX_HOME": str(folder / "Codex"),
+            },
+        ):
+            for client in ("codex", "vscode"):
+                status, raw = self.call(
+                    "/api/connect",
+                    {
+                        "provider": "iteracompute",
+                        "client": client,
+                        "model": "owner/model",
+                        "api_key": VENDOR_KEY,
+                    },
+                )
+                self.assertEqual(status, 200)
+                self.assertNotIn(VENDOR_KEY.encode(), raw)
+                self.assertTrue(client_path(client).exists())
+            group = json.loads(client_path("vscode").read_text())[0]
+            entry = group["models"][0]
+            self.assertEqual(entry["id"], "owner/model")
+            self.assertEqual(group["apiType"], "responses")
+            self.assertFalse(entry["statefulResponses"])
+            self.assertTrue(entry["toolCalling"])
+            self.assertFalse(entry["vision"])
+            self.assertGreater(entry["maxInputTokens"], entry["maxOutputTokens"])
+            self.assertEqual(
+                group["models"][0]["url"],
+                f"http://127.0.0.1:{self.app.relay.server_port}/p/iteracompute/v1/responses",
+            )
+            settings = self.app.settings_path.read_bytes()
+            self.assertEqual(self.call("/api/disconnect", {"client": "codex"})[0], 200)
+            self.assertFalse(client_path("codex").exists())
+            self.assertTrue(client_path("vscode").exists())
+            self.assertEqual(self.app.settings_path.read_bytes(), settings)
 
     def test_external_key_file_edits_are_not_overwritten_by_stale_ui(self):
         data = read_settings(self.app.settings_path)

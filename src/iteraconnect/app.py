@@ -14,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .config import ConnectError, state_dir
+from .config import ConnectError, gateway_key, gateway_url, state_dir
 from .diagnostics import probe
 from .gateway import Gateway, provider_models
 from .native import client_path, connect_native, disconnect_native, render_native
@@ -66,17 +66,28 @@ class App(ThreadingHTTPServer):
             "settings": public_settings(self.data),
             "settings_path": str(self.settings_path),
             "relay_port": self.relay.server_port,
-            "clients": [
-                {
-                    "id": k,
-                    "name": v[0],
-                    "protocol": v[1],
-                    "installed": bool(shutil.which(k)) or client_path(k).parent.exists(),
-                    "config_path": str(client_path(k)),
-                    "connected": (state_dir() / "native-backups" / (k + ".json")).exists(),
-                }
-                for k, v in CLIENTS.items()
-            ],
+            "clients": [self.client_state(k) for k in CLIENTS],
+        }
+
+    @staticmethod
+    def client_state(target):
+        client = CLIENTS[target]
+        path = None if client.guided else client_path(target)
+        command = {"vscode": "code", "visual-studio": "devenv"}.get(target, target)
+        return {
+            "id": target,
+            "name": client.name,
+            "protocol": client.protocols[0],
+            "protocols": client.protocols,
+            "guided": client.guided,
+            "manual_test": client.manual_test,
+            "next_step": client.next_step,
+            "installed": bool(shutil.which(command)),
+            "config_detected": bool(path and path.parent.exists()),
+            "config_path": str(path) if path else None,
+            "connected": bool(
+                path and (state_dir() / "native-backups" / (target + ".json")).exists()
+            ),
         }
 
     def draft_models(self, body):
@@ -108,32 +119,44 @@ class App(ThreadingHTTPServer):
         finally:
             os.environ.pop(key_env, None)
 
+    def save_selection(self, body):
+        data = copy.deepcopy(self.data)
+        pid, target = body.get("provider"), body.get("client")
+        if target not in CLIENTS or not isinstance(pid, str):
+            raise ConnectError("请选择有效的 API 和客户端。")
+        old = data["providers"].get(pid, {})
+        p = {k: body.get(k, old.get(k)) for k in ("name", "base_url", "model", "protocols")}
+        p["api_key"] = body.get("api_key") or old.get("api_key", "")
+        if "endpoints" in body:
+            p["endpoints"] = body["endpoints"]
+        elif "endpoints" in old:
+            p["endpoints"] = old["endpoints"]
+        data["providers"][pid] = p
+        data["selected_provider"], data["client"] = pid, target
+        self.activate(data, persist=True)
+
     def action(self, route, body):
         if route == "/api/models" and body:
             return self.draft_models(body)
         if route == "/api/reload":
             self.activate(read_settings(self.settings_path))
             return self.state()
+        if route == "/api/disconnect":
+            target = body.get("client", self.data["client"])
+            if target not in CLIENTS or CLIENTS[target].guided:
+                raise ConnectError("此客户端请在应用的模型管理中移除端点。")
+            return disconnect_native(target)
         if route == "/api/save":
-            data = copy.deepcopy(self.data)
-            pid, target = body.get("provider"), body.get("client")
-            if target not in CLIENTS or not isinstance(pid, str):
-                raise ConnectError("请选择有效的 API 和客户端。")
-            old = data["providers"].get(pid, {})
-            p = {k: body.get(k, old.get(k)) for k in ("name", "base_url", "model", "protocols")}
-            p["api_key"] = body.get("api_key") or old.get("api_key", "")
-            if "endpoints" in body:
-                p["endpoints"] = body["endpoints"]
-            elif "endpoints" in old:
-                p["endpoints"] = old["endpoints"]
-            data["providers"][pid] = p
-            data["selected_provider"], data["client"] = pid, target
-            self.activate(data, persist=True)
+            self.save_selection(body)
             return self.state()
+        if body and route in ("/api/connect", "/api/export", "/api/probe", "/api/smoke"):
+            self.save_selection(body)
+            return {**self.run_selected(route), "state": self.state()}
+        return self.run_selected(route)
+
+    def run_selected(self, route):
         pid, target = self.data["selected_provider"], self.data["client"]
         p = self.data["providers"][pid]
-        if route == "/api/disconnect":
-            return disconnect_native(target)
         if route == "/api/export":
             fragment = render_native(target, "", self.config, pid, p["model"])
             # Export substitutes the local relay token, never a vendor key.
@@ -143,17 +166,27 @@ class App(ThreadingHTTPServer):
         if route == "/api/models":
             return {"models": [m["id"] for m in provider_models(self.config["providers"][pid])]}
         if route == "/api/connect":
+            if CLIENTS[target].guided:
+                if "chat" not in p["protocols"]:
+                    raise ConnectError("Visual Studio 的此接入方式需要 Chat Completions。")
+                return {
+                    "setup": "guided",
+                    "base_url": gateway_url(self.config, pid) + "/v1",
+                    "model": p["model"],
+                    "local_key": gateway_key(),
+                }
             return connect_native(target, self.config, pid, p["model"])
         if route == "/api/probe":
-            protocol = CLIENTS[target][1]
+            protocol = CLIENTS[target].select_protocol(p["protocols"])
             if protocol not in p["protocols"]:
                 raise ConnectError(f"此客户端需要 {protocol} 协议，当前 API 未配置。")
             return probe(self.config, pid, protocols=[protocol], budget=256)
         if route == "/api/smoke":
-            if target not in ("claude", "codex", "openclaw", "hermes"):
+            if CLIENTS[target].manual_test:
                 return {
                     "status": "manual-required",
-                    "message": "此客户端需要在原应用中手动发送测试消息；配置成功不代表实测通过。",
+                    "message": CLIENTS[target].next_step.format(provider=pid, model=p["model"])
+                    + " 在新会话发送：Reply with exactly ITERACONNECT_OK. 核对回复。",
                 }
             return smoke(self.config, target, pid, timeout=90, native=True)
         raise ConnectError("未知操作。")
@@ -228,6 +261,7 @@ class Handler(BaseHTTPRequestHandler):
         if not self.server.operation.acquire(blocking=False):
             self.reply(409, {"error": "上一个操作仍在进行，请稍后重试。"})
             return
+        previous_data = self.server.data
         try:
             size = int(self.headers.get("Content-Length", "0"))
             if not 0 < size <= 32768 or self.headers.get("Content-Type") != "application/json":
@@ -237,13 +271,18 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError
             self.reply(200, self.server.action(self.path, body))
         except ConnectError as e:
-            self.reply(400, {"error": str(e)})
+            self.action_error(str(e), previous_data)
         except (ValueError, TypeError, KeyError, AttributeError, OSError):
-            self.reply(
-                400, {"error": "操作未完成，请检查配置、文件权限及网络。详细内容不会返回密钥。"}
-            )
+            self.action_error("操作未完成，请检查配置、文件权限及网络。", previous_data)
         finally:
             self.server.operation.release()
+
+    def action_error(self, message, previous_data):
+        error = {"error": message}
+        if self.server.data is not previous_data:
+            # The submitted API was saved before the client operation failed.
+            error.update(error="API 设置已保存。" + message, state=self.server.state())
+        self.reply(400, error)
 
 
 def serve_app(settings, port=18424, relay_port=18423, open_browser=True):

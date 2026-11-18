@@ -4,8 +4,7 @@
 
 `python3 start.py` uses original UI, settings, native adapters and the relay. It needs no upstream
 binary. API switching, custom native endpoints, model discovery, connect/restore and API/client
-tests are available in one local interface. Six client entries cover Claude Code, Codex,
-WorkBuddy, WorkBuddy AI, OpenClaw and Hermes. Config adaptation is separate from actual app
+tests are available in one local interface. Seven file adapters cover Claude Code, Codex CLI, WorkBuddy, WorkBuddy AI, VS Code, OpenClaw and Hermes. Visual Studio on Windows has a separate guided Copilot Chat endpoint setup. Config adaptation is separate from actual app
 inference verification; see acceptance.md. Protocol conversion, subscription login, upstream
 plugins and additional clients remain in the optional advanced interfaces below.
 

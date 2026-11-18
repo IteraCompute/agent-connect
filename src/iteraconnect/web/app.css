@@ -1428,3 +1428,46 @@ footer .icon {
     transition: none !important;
   }
 }
+
+.setup-guide {
+  margin-top: 16px;
+  background: #f7f9f4;
+  border: 1px solid #dce6d8;
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.setup-guide h3 {
+  font-size: 14px;
+  margin: 0;
+}
+.setup-guide ol {
+  padding-left: 20px;
+}
+.setup-guide li + li {
+  margin-top: 10px;
+}
+.setup-guide p {
+  color: var(--muted);
+}
+.guide-value {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  margin-top: 8px;
+}
+.guide-value label {
+  grid-column: 1 / -1;
+}
+.guide-value input {
+  font-family: ui-monospace, monospace;
+  min-width: 0;
+}
+.client[data-id="visual-studio"] .client-icon,
+.client[data-id="vscode"] .client-icon {
+  color: #635288;
+  background: #f1edf8;
+  font-size: 13px;
+}
