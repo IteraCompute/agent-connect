@@ -12,10 +12,13 @@ from pathlib import Path
 
 from .config import ConnectError, gateway_key, gateway_url, private_write, state_dir
 from .settings import CLIENTS
+from .vscode import insert_group, models_path
 
 
 def client_path(target, home=None):
     home = home or Path.home()
+    if target == "vscode":
+        return models_path(home)
     folders = {
         "claude": ("CLAUDE_CONFIG_DIR", ".claude", "settings.json"),
         "codex": ("CODEX_HOME", ".codex", "config.toml"),
@@ -69,7 +72,7 @@ def edit_codex(text, root, key, model):
             pattern = rf"(?m)^{name}\s*=.*$"
             matches = list(re.finditer(pattern, text))
             if name in before:
-                if not matches or ("[" in text[: matches[0].start()]):
+                if not matches:
                     raise ConnectError("Codex 根配置使用复杂 TOML，请使用手动导出。")
                 text = (
                     text[: matches[0].start()]
@@ -163,12 +166,16 @@ def yaml_put(text, path, value, remove=False):
 
 
 def render_native(target, text, config, pid, model):
-    protocol = CLIENTS[target][1]
+    if target not in CLIENTS or CLIENTS[target].guided:
+        raise ConnectError("此客户端使用应用内引导接入。")
+    protocol = CLIENTS[target].protocol
     if protocol not in config["providers"][pid]["endpoints"]:
         raise ConnectError(
             f"当前 API 缺少 {protocol} 协议。请选择支持它的 API，或使用高级协议适配。"
         )
     root, key = gateway_url(config, pid), gateway_key()
+    if target == "vscode":
+        return insert_group(text, root, key, model)
     if target == "codex":
         return edit_codex(text, root, key, model)
     if target == "hermes":
@@ -228,10 +235,26 @@ def render_native(target, text, config, pid, model):
             models = value.get("models") if isinstance(value, dict) else value
             if not isinstance(models, list) or any(not isinstance(x, dict) for x in models):
                 raise ValueError
+            managed = {
+                x["id"]
+                for x in models
+                if x.get("vendor") == "iteraconnect" and isinstance(x.get("id"), str)
+            }
             models = [x for x in models if x.get("vendor") != "iteraconnect"]
+            model_id = pid + "/" + model
+            if any(x.get("id") == model_id for x in models):
+                raise ConnectError("WorkBuddy 已有同名模型，请先重命名或导出配置。")
+            if isinstance(value, dict) and "availableModels" in value:
+                allowed = value["availableModels"]
+                if not isinstance(allowed, list) or any(not isinstance(i, str) for i in allowed):
+                    raise ValueError
+                if allowed:
+                    value["availableModels"] = [
+                        i for i in allowed if i not in managed and i != model_id
+                    ] + [model_id]
             models.append(
                 {
-                    "id": pid + "/" + model,
+                    "id": model_id,
                     "name": "Agent Connect · " + model,
                     "vendor": "iteraconnect",
                     "apiKey": key,
@@ -302,13 +325,15 @@ def connect_native(target, config, pid, model, home=None, backups=None):
         text = (old or b"").decode("utf-8")
     except UnicodeError:
         raise ConnectError("客户端配置不是 UTF-8；原文件未修改。") from None
-    new = render_native(target, text, config, pid, model).encode()
     if record.exists():
         saved = json.loads(record.read_text())
         if saved["path"] != str(path) or saved["applied_sha256"] != digest(old or b""):
             raise ConnectError("客户端配置在连接后发生变化。请先手动核对备份，避免覆盖你的修改。")
     else:
         saved = {"path": str(path), "original": text if old is not None else None}
+    # Rebuild the VS Code insertion from its verified baseline on reconnect.
+    source = (saved["original"] or "") if target == "vscode" else text
+    new = render_native(target, source, config, pid, model).encode()
     # Journal before mutation. If interrupted, rollback accepts the known before/after digest.
     saved["previous_sha256"] = digest(old or b"")
     saved["applied_sha256"] = digest(new)
@@ -316,12 +341,7 @@ def connect_native(target, config, pid, model, home=None, backups=None):
     private_write(path, new)
     return {
         "path": str(path),
-        "message": "配置已连接。重启客户端后生效；使用期间保持 Agent Connect 运行。"
-        + (
-            " 在 WorkBuddy 的模型选择器中选择 custom-local:" + pid + "/" + model + "。"
-            if target.startswith("workbuddy")
-            else ""
-        ),
+        "message": "配置已写入。" + CLIENTS[target].next_step.format(provider=pid, model=model),
     }
 
 

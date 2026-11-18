@@ -51,6 +51,48 @@ Host/Origin/control-token enforcement, local-fixture probes, independent configu
 preservation, reconnect, exact restoration and protection against later edits. The opt-in
 `NativeSettingsClientTests` reads these new native configs with the installed actual clients.
 
+### Reproduce the client setup checks
+
+Run the fixture suite with `python -m unittest discover -v`. To exercise the actual workbench
+in a disposable Chromium session, install Playwright in a development environment and run:
+
+```bash
+python -m pip install playwright
+python -m playwright install chromium
+python -m tests.workbench_browser
+```
+
+Use `--screenshot reports/workbench.jpg` with an existing output directory to keep a fixture
+screenshot. The test checks all eight cards, their setup or restore actions, guided field copying,
+stale field removal, manual test instructions, API result cards, keyboard input and a narrow
+viewport. The fixture model is named `fixture-model`.
+
+To run VS Code desktop chat itself on Linux, enable the installed Copilot Chat extension and
+use the same Playwright development environment with Xvfb. This starts an isolated Electron
+extension development host, loads that installed extension from disk, selects the only local
+model in the fresh profile, sends the fixed test message, checks the assistant's rendered response,
+then restores the original profile. The default paths match Microsoft's Debian package.
+`--electron` and `--copilot` accept other installation paths.
+
+```bash
+xvfb-run -a python -m tests.vscode_desktop
+xvfb-run -a python -m tests.vscode_desktop --settings agent-connect.local.toml
+```
+
+The first command runs against the local vendor fixture. The second incurs API usage on the
+explicitly selected provider and model. To capture a fixture-only screenshot, add
+`--screenshot reports/vscode-fixture.png` to the first command.
+
+For a real provider run with the CLIs, explicitly select the private settings file, protocols and installed
+CLIs. The following command sends generation requests to the selected provider and model.
+The script uses temporary client homes and outputs only the test name, status and elapsed seconds.
+
+```bash
+python scripts/check_live.py --settings agent-connect.local.toml --protocols chat responses anthropic --clients codex claude openclaw hermes
+```
+
+See the [per-client evidence and desktop acceptance procedure](client-setup-acceptance.md).
+
 ### Browser UI regression
 
 Use a temporary HOME/config directory and a local fixture vendor; do not connect the UI test

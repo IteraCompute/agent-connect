@@ -5,6 +5,8 @@ const clientIcons = {
   codex: "⌘",
   workbuddy: "W",
   "workbuddy-ai": "W",
+  "visual-studio": "VS",
+  vscode: "〈〉",
   openclaw: "◈",
   hermes: "H",
 };
@@ -62,11 +64,16 @@ async function api(path, body) {
     );
   }
   const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "操作未完成，请重试。");
+  if (!response.ok) {
+    if (data.state) render(data.state);
+    throw new Error(data.error || "操作未完成，请重试。");
+  }
   return data;
 }
 function result(title, message, kind = "", data) {
   resultSelection = undefined;
+  $("setup-guide").hidden = true;
+  $("guide-fields").replaceChildren();
   $("result").className = "result-box" + (kind ? " " + kind : "");
   $("result-title").textContent = title;
   $("result-message").textContent = message;
@@ -187,6 +194,16 @@ function selectionSnapshot() {
     Boolean($("api-key").value.trim()),
   ]);
 }
+function clientNextStep(client) {
+  const values = {
+    provider: adding ? $("provider-id").value.trim() : $("provider").value,
+    model: $("model").value.trim(),
+  };
+  return client.next_step.replace(
+    /\{(provider|model)\}/g,
+    (_, name) => values[name] || "…",
+  );
+}
 function updatePath() {
   if (!state) return;
   if (resultSelection && resultSelection !== selectionSnapshot()) {
@@ -208,7 +225,13 @@ function updatePath() {
   $("path-model").textContent = $("model").value.trim() || "请选择模型";
   $("path-client").textContent = client.name;
   $("path-client-icon").textContent = clientIcons[client.id];
-  $("connect-label").textContent = "连接 " + client.name;
+  $("native-actions").hidden = client.guided;
+  $("smoke-label").textContent = client.manual_test
+    ? "查看实测步骤"
+    : "客户端实测";
+  $("connect-label").textContent = client.guided
+    ? "获取 Visual Studio 接入信息"
+    : "连接 " + client.name;
   $("required-protocol").textContent = protocols[client.protocol];
   $("protocol-match").textContent = matched ? "协议匹配" : "需要配置";
   $("protocol-match").classList.toggle("missing", !matched);
@@ -217,15 +240,16 @@ function updatePath() {
   $("compatibility-text").textContent =
     `此客户端需要 ${protocols[client.protocol]}。请确认 API 支持后，在地址与协议中勾选。`;
   $("connection-status").textContent = client.connected
-    ? "已配置 · 可恢复"
-    : "尚未连接";
+    ? "此软件有备份"
+    : client.guided
+      ? "在软件内添加"
+      : "尚未连接";
   $("connection-status").className =
     "badge " + (client.connected ? "good" : "neutral");
-  $("client-hint").textContent = client.id.startsWith("workbuddy")
-    ? "连接后重启 WorkBuddy，在任务中选择 custom-local 模型。"
-    : client.installed
-      ? "自动备份并写入配置，连接后重启客户端即可使用。"
-      : "尚未检测到安装。可以先连接配置，再安装客户端。";
+  const nextStep = clientNextStep(client);
+  $("client-hint").textContent = client.guided
+    ? nextStep
+    : "接入后：" + nextStep;
   document.querySelectorAll(".client").forEach((el) => {
     const selected = el.dataset.id === selectedClient;
     el.classList.toggle("selected", selected);
@@ -256,8 +280,18 @@ function render(next) {
     $("provider").append(option);
   });
   $("provider").value = next.settings.selected_provider;
+  renderClients();
+  $("settings-location").textContent =
+    "本地配置：" + next.settings_path.split(/[\\/]/).pop();
+  $("settings-location").title = next.settings_path;
+  loadProvider();
+  if (first && next.settings.providers[next.settings.selected_provider].has_key)
+    result("已读取本地配置", "选择客户端即可连接，也可以先测试 API。");
+}
+function renderClients() {
+  $("client-count").textContent = state.clients.length + " 个客户端";
   $("clients").replaceChildren();
-  next.clients.forEach((c) => {
+  state.clients.forEach((c) => {
     const button = document.createElement("button");
     button.className = "client";
     button.dataset.id = c.id;
@@ -269,16 +303,20 @@ function render(next) {
       textElement(
         "span",
         "client-type",
-        c.id === "hermes" || c.id === "openclaw" ? "智能体" : "编码工具",
+        c.guided ? "应用内引导" : "自动写入配置",
       ),
       textElement(
         "span",
         "client-status" + (c.connected || c.installed ? " detected" : ""),
         c.connected
           ? "已配置 · 可恢复"
-          : c.installed
-            ? "已检测到安装"
-            : "可配置 · 未检测到",
+          : c.guided
+            ? "Windows · Copilot Chat"
+            : c.installed
+              ? "已检测到安装"
+              : c.config_detected
+                ? "发现配置目录"
+                : "可配置 · 未检测到",
       ),
     );
     const mark = textElement("span", "client-check", "");
@@ -302,30 +340,24 @@ function render(next) {
       ];
       if (!keys.includes(event.key)) return;
       event.preventDefault();
-      const index = next.clients.findIndex(
+      const index = state.clients.findIndex(
         (item) => item.id === selectedClient,
       );
       const at =
         event.key === "Home"
           ? 0
           : event.key === "End"
-            ? next.clients.length - 1
+            ? state.clients.length - 1
             : (index +
                 (["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 1) +
-                next.clients.length) %
-              next.clients.length;
-      selectedClient = next.clients[at].id;
+                state.clients.length) %
+              state.clients.length;
+      selectedClient = state.clients[at].id;
       updatePath();
       $("clients").children[at].focus();
     };
     $("clients").append(button);
   });
-  $("settings-location").textContent =
-    "本地配置：" + next.settings_path.split(/[\\/]/).pop();
-  $("settings-location").title = next.settings_path;
-  loadProvider();
-  if (first && next.settings.providers[next.settings.selected_provider].has_key)
-    result("已读取本地配置", "选择客户端即可连接，也可以先测试 API。");
 }
 function form({ catalog = false, requireKey = false } = {}) {
   clearErrors();
@@ -532,24 +564,69 @@ $("models").onclick = () =>
       data.models.length ? "success" : "",
     );
   });
+async function submitAction(route, requireKey = false) {
+  const { state: next, ...data } = await api(route, form({ requireKey }));
+  render(next);
+  return data;
+}
+function showGuide(data) {
+  result(
+    "接入信息已准备好",
+    "在 Visual Studio 中添加模型后，发送测试消息确认回复。",
+  );
+  const fields = [
+    ["base_url", "端点地址"],
+    ["model", "模型 ID"],
+    ["local_key", "API Key（本地网关令牌）"],
+  ];
+  fields.forEach(([name, label]) => {
+    const row = textElement("div", "guide-value", "");
+    const input = document.createElement("input");
+    input.id = "guide-" + name;
+    input.type = name === "local_key" ? "password" : "text";
+    input.readOnly = true;
+    input.value = data[name];
+    const title = textElement("label", "", label);
+    title.htmlFor = input.id;
+    const copy = textElement("button", "secondary", "复制");
+    copy.setAttribute("aria-label", "复制" + label);
+    copy.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(input.value);
+        copy.textContent = "已复制";
+      } catch {
+        input.type = "text";
+        input.focus();
+        input.select();
+        copy.textContent = "请手动复制";
+      }
+    };
+    row.append(title, input, copy);
+    $("guide-fields").append(row);
+  });
+  $("setup-guide").hidden = false;
+  $("guide-title").focus();
+  resultSelection = selectionSnapshot();
+}
 $("connect").onclick = () =>
-  busy("正在备份并连接客户端…", async () => {
-    await save({ requireKey: true });
-    const data = await api("connect", {});
-    render(await api("state"));
+  busy("正在准备接入…", async () => {
+    const data = await submitAction("connect", true);
+    if (data.setup === "guided") return showGuide(data);
     result("客户端已配置", data.message, "success");
+    resultSelection = selectionSnapshot();
+    $("client-hint").textContent = data.message;
   });
 $("disconnect").onclick = () =>
   busy("正在检查并恢复原配置…", async () => {
-    await save();
-    const data = await api("disconnect", {});
-    render(await api("state"));
+    const data = await api("disconnect", { client: selectedClient });
+    state.clients.find((c) => c.id === selectedClient).connected = false;
+    renderClients();
+    updatePath();
     result("已恢复原配置", data.message, "success");
   });
 $("export").onclick = () =>
   busy("正在生成配置片段…", async () => {
-    await save();
-    const data = await api("export", {});
+    const data = await submitAction("export");
     result("配置片段已生成", data.message);
     $("result-json").textContent = data.fragment;
     $("details-label").textContent = "查看配置片段";
@@ -572,16 +649,29 @@ $("copy-export").onclick = async () => {
   }
 };
 ["probe", "smoke"].forEach((type) => {
-  $(type).onclick = () =>
-    busy(
+  $(type).onclick = () => {
+    const client = state.clients.find((c) => c.id === selectedClient);
+    if (type === "smoke" && client.manual_test) {
+      showTest(
+        {
+          status: "manual-required",
+          message:
+            clientNextStep(client) +
+            " 在新会话发送：Reply with exactly ITERACONNECT_OK. 核对回复。",
+        },
+        type,
+      );
+      return;
+    }
+    return busy(
       type === "probe"
         ? "正在测试文本、流式与工具调用，请稍候…"
         : "正在启动隔离的客户端测试，最长约 90 秒…",
       async () => {
-        await save({ requireKey: true });
-        showTest(await api(type, {}), type);
+        showTest(await submitAction(type, true), type);
       },
     );
+  };
 });
 updateAvailability();
 api("state")

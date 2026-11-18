@@ -42,6 +42,14 @@ The independent native adapters honor `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `WORKBU
 `WORKBUDDY_AI_CONFIG_DIR`, `OPENCLAW_STATE_DIR` / `OPENCLAW_CONFIG_PATH`, and `HERMES_HOME`.
 Defaults are `~/.claude/settings.json`, `~/.codex/config.toml`, `~/.workbuddy/models.json`,
 `~/.workbuddy-ai/models.json`, `~/.openclaw/openclaw.json` and `~/.hermes/config.yaml`.
+On stable desktop VS Code, the adapter adds a Custom Endpoint to `chatLanguageModels.json` under
+`%APPDATA%/Code/User` (Windows), `~/Library/Application Support/Code/User` (macOS), or
+`$XDG_CONFIG_HOME/Code/User` (Linux, default `~/.config/Code/User`). Set
+`ITERACONNECT_VSCODE_USER_DIR` for a named profile or nonstandard user directory. JSONC comments,
+trailing commas and existing groups are preserved. VS Code uses a model-level Authorization header
+carrying the loopback relay token. The generated chat profile enables tools, disables vision and
+uses local budgets of 16,384 input tokens and 2,048 output tokens. Visual Studio on Windows uses the IDE's model
+manager and displays per-field copy buttons in the workbench.
 Original contents and the installed content hash are journaled under `native-backups` in the
 Agent Connect state directory. Restore only proceeds if the file still matches the known
 applied/transaction state. Existing unrelated JSON fields and TOML/YAML settings are preserved.

@@ -84,9 +84,8 @@
     <main>
       <div class="intro">
         <div>
-          <div class="eyebrow"><span></span> YOUR MODELS. YOUR TOOLS.</div>
-          <h1>把模型，接入你的工作流。</h1>
-          <p>选择 API 和客户端，让你熟悉的工具用上你需要的模型。</p>
+          <h1>连接你的软件</h1>
+          <p>首次填写 API key 和模型，然后选择软件。下次打开可直接切换。</p>
         </div>
         <div class="local-note">
           <svg class="icon"><use href="#i-shield" /></svg>
@@ -242,9 +241,9 @@
             <span class="step">02</span>
             <div>
               <h2 id="client-heading">选择你的客户端</h2>
-              <p>编码工具或智能体，都可以接入</p>
+              <p>选择要使用这个模型的软件</p>
             </div>
-            <span class="badge neutral">6 个客户端</span>
+            <span id="client-count" class="badge neutral"></span>
           </div>
           <div
             id="clients"
@@ -295,7 +294,31 @@
           <p id="client-hint" class="connect-help">
             自动备份原配置，连接后重启客户端即可使用。
           </p>
-          <div class="client-footer">
+          <section
+            id="setup-guide"
+            class="setup-guide"
+            aria-labelledby="guide-title"
+            hidden
+          >
+            <h3 id="guide-title" tabindex="-1">在 Visual Studio 中添加模型</h3>
+            <ol>
+              <li>
+                在 Windows 的 Visual Studio 2026（18.10 或更高版本）打开 Copilot
+                Chat，在模型菜单选择“管理模型” → “添加模型”。
+              </li>
+              <li>
+                选择 Custom Endpoint，或支持自定义地址的 OpenAI。选择
+                Completions 格式，用下面三项填写并保存。
+                <div id="guide-fields"></div>
+              </li>
+              <li>
+                在 Agent 模式的新对话中选中该模型，发送
+                <code>Reply with exactly ITERACONNECT_OK.</code>，核对回复。
+              </li>
+            </ol>
+            <p>需要移除时，在同一模型菜单删除此端点。</p>
+          </section>
+          <div id="native-actions" class="client-footer">
             <span
               ><svg class="icon"><use href="#i-shield" /></svg
               >原配置自动备份</span
@@ -320,7 +343,8 @@
             <button id="probe" class="secondary">
               <svg class="icon"><use href="#i-link" /></svg>测试 API</button
             ><button id="smoke" class="secondary">
-              <svg class="icon"><use href="#i-terminal" /></svg>客户端实测
+              <svg class="icon"><use href="#i-terminal" /></svg
+              ><span id="smoke-label">客户端实测</span>
             </button>
           </div>
         </div>

@@ -4,7 +4,7 @@
 
 [**中文**](README.md) | [**English**](README.en.md)
 
-A lightweight local connector for Claude Code, Codex, WorkBuddy, WorkBuddy AI, OpenClaw and Hermes.
+A lightweight local connector for Claude Code, Codex, WorkBuddy, WorkBuddy AI, Visual Studio, VS Code, OpenClaw and Hermes.
 IteraCompute is configured by default; you can save and switch to other compatible model APIs.
 The UI, configuration editors and relay are independent implementations. No CC Switch or Magpie
 application source is copied. The normal workflow requires **Python 3.11+** only: no pip install,
@@ -43,19 +43,17 @@ If Windows has no `py` launcher, use `python --version` and `python start.py`, p
 
 ### 2. Download and launch
 
-The initial implementation is on `feat/agent-connect` in [PR #1](https://github.com/IteraCompute/agent-connect/pull/1).
-Before that PR reaches `main`, use these complete commands:
+The initial implementation was merged into the default `main` branch in [PR #1](https://github.com/IteraCompute/agent-connect/pull/1). Download and launch it:
 
 ```bash
-git clone --branch feat/agent-connect https://github.com/IteraCompute/agent-connect.git
+git clone https://github.com/IteraCompute/agent-connect.git
 cd agent-connect
 python3 start.py
 ```
 
 On Windows, replace the last line with `py -3 start.py`. Without Git, download the
-[branch ZIP](https://github.com/IteraCompute/agent-connect/archive/refs/heads/feat/agent-connect.zip),
-extract it, and open the directory containing `start.py`. After the initial merge, you can also
-clone the default `main` branch directly.
+[`main` branch ZIP](https://github.com/IteraCompute/agent-connect/archive/refs/heads/main.zip),
+extract it, and open the directory containing `start.py`.
 
 | Platform | Recommended launch | Alternative |
 | --- | --- | --- |
@@ -86,9 +84,9 @@ see the dated [acceptance record](docs/acceptance.md).
 2. Check the API, model and protocol in the connection preview. Once it shows **协议匹配**
    (Protocol matched), click **连接 Claude Code** (Connect Claude Code), or the equivalent
    button for your selected client.
-3. Agent Connect backs up the original file and writes that client's user configuration.
+3. For cards labeled 自动写入配置 (automatic configuration), Agent Connect backs up the original file and writes that client's user configuration.
    Fully quit and restart the client, then create a fresh session.
-4. WorkBuddy / WorkBuddy AI also requires choosing the added `custom-local` model in the
+4. Visual Studio opens a setup guide for its model manager. VS Code requires selecting the added model after reload. WorkBuddy / WorkBuddy AI requires choosing the added `custom-local` model in the
    task model menu; see [client instructions](#connect-each-client).
 
 Keep Agent Connect's launcher terminal running while using a connected client. Closing the
@@ -136,7 +134,7 @@ This is a complete example. Normally only `api_key` needs changing. Save, then c
 | Field | Purpose |
 | --- | --- |
 | `selected_provider` | API ID for this operation; must match a `[providers.<id>]` table |
-| `client` | `claude`, `codex`, `workbuddy`, `workbuddy-ai`, `openclaw` or `hermes` |
+| `client` | `claude`, `codex`, `workbuddy`, `workbuddy-ai`, `visual-studio`, `vscode`, `openclaw` or `hermes` |
 | `name` | Display name |
 | `api_key` | This provider's credential; never returned to the page or written to client settings |
 | `base_url` | API root or OpenAI-compatible `/v1` base |
@@ -172,7 +170,7 @@ not implement a model catalog, type the model ID it documents instead.
 
 | API type | Example base | Protocol | Directly supported clients |
 | --- | --- | --- | --- |
-| OpenAI Chat compatible | `https://api.example.com/v1` | `chat` | WorkBuddy, WorkBuddy AI, OpenClaw, Hermes |
+| OpenAI Chat compatible | `https://api.example.com/v1` | `chat` | WorkBuddy, WorkBuddy AI, VS Code, Visual Studio, OpenClaw, Hermes |
 | OpenAI Responses compatible | `https://api.example.com/v1` | `responses` | Codex |
 | Anthropic Messages compatible | `https://api.example.com` | `anthropic` | Claude Code |
 | Multiple native protocols | Vendor's documented base | Only protocols it actually serves | Clients requiring those protocols |
@@ -198,20 +196,22 @@ The local relay preserves native protocols. It does not convert Chat to Response
 A Chat-only service cannot directly serve Claude Code or Codex through the simple app; use the
 [optional Magpie bridge](docs/advanced.md) when conversion is required.
 
-Configuration also accepts Gemini endpoints, but the six simple client cards use Chat, Responses
+Configuration also accepts Gemini endpoints, but the eight client entries use Chat, Responses
 or Messages. See the [coverage matrix](docs/coverage.md) for Gemini-specific advanced access.
 
 ## Connect each client
 
-These are the simple workspace's independent native adapters. No additional vendor key needs
+Choose an automatic configuration card or guided setup for Visual Studio. No additional vendor key needs
 to be entered in the client: it receives a local relay credential, and Agent Connect forwards requests.
 
-| Client | Required native protocol | Default user file edited |
+| Client | Required native protocol | Configuration location |
 | --- | --- | --- |
 | Claude Code | Anthropic Messages | `~/.claude/settings.json` |
 | Codex CLI | OpenAI Responses | `~/.codex/config.toml` |
 | WorkBuddy | OpenAI Chat Completions | `~/.workbuddy/models.json` |
 | WorkBuddy AI | OpenAI Chat Completions | `~/.workbuddy-ai/models.json` |
+| Visual Studio (Windows) | OpenAI Chat Completions | Copilot Chat → Manage Models → Add a model |
+| VS Code (stable desktop) | OpenAI Chat Completions | User profile’s `chatLanguageModels.json` |
 | OpenClaw | OpenAI Chat Completions | `~/.openclaw/openclaw.json` |
 | Hermes | OpenAI Chat Completions | `~/.hermes/config.yaml` |
 
@@ -228,7 +228,7 @@ fixed test message below in a new session.
 
 ### Codex
 
-Select **Codex**, connect and restart `codex`. The adapter sets a Responses provider named
+Select **Codex CLI**, connect and restart `codex`. The adapter sets a Responses provider named
 `iteraconnect` and your selected model. If an existing user file already contains an unrelated
 provider with that name, the app reports an error and preserves the file. Rename that entry
 before retrying or export and merge the fragment manually. Acceptance covers Codex CLI;
@@ -243,6 +243,14 @@ a new task. Select `custom-local:iteracompute/MODEL_ID` in the task model menu; 
 
 The workspace requests manual verification in the original application. Automated desktop
 inference acceptance is not available; successful configuration alone is not a passing inference test.
+
+### Visual Studio (Windows)
+
+Select **获取 Visual Studio 接入信息**. In Visual Studio 2026 18.10 or later, open the Copilot Chat model picker and select Manage Models. Add a Custom Endpoint, or an OpenAI provider that accepts a custom URL. Use the Completions format and the three copy buttons for the endpoint URL, model ID and local relay key. Select that model in a new Agent chat. Remove the endpoint from the same menu to disconnect. [Microsoft model management guide](https://learn.microsoft.com/en-us/visualstudio/ide/copilot-select-add-models?view=visualstudio)
+
+### VS Code
+
+Run Agent Connect on the same machine as stable desktop VS Code with the Copilot Chat Custom Endpoint provider. Select **连接 VS Code**, reload the window and select the model under Agent Connect in a new local chat. The adapter targets the default profile. For a named or portable profile, set `ITERACONNECT_VSCODE_USER_DIR` to the directory containing that profile’s `chatLanguageModels.json` before launching the workbench. [VS Code model configuration](https://code.visualstudio.com/docs/agent-customization/language-models)
 
 ### OpenClaw
 
@@ -269,7 +277,7 @@ at startup.**
 | **获取模型** | Vendor model catalog | One catalog request; no generation or draft save |
 | **测试 API** | Text, complete SSE and a tool-call/result round trip for the selected client's protocol | Up to 4 generation requests, each with a 256-token output budget |
 | **客户端实测** | Installed Claude Code / Codex / OpenClaw / Hermes process and its actual reply | Uses API quota; temporary settings/directories; no daily logins or chats copied |
-| WorkBuddy / WorkBuddy AI | Message and tool task inside the original application | Manual acceptance required and explicitly reported |
+| **查看实测步骤** (WorkBuddy editions, VS Code, Visual Studio) | Message and tool task inside the original application | Manual acceptance required and explicitly reported |
 
 Recommended sequence:
 
@@ -300,13 +308,15 @@ manual acceptance. Earlier Auto 400/429 and a Haiku tool 502 are retained in the
 tests on Ubuntu, macOS and Windows with Python 3.11/3.14, plus quality/build, Magpie and the required
 aggregate check. Cross-platform CI does not replace real-client acceptance on each platform.
 
+See the [2026-11-18 per-client acceptance results and reproduction steps](docs/client-setup-acceptance.md).
+
 ### Read the status labels
 
 | Chinese status | Meaning |
 | --- | --- |
 | 有未保存更改 | API, model, protocol or client changed; connection, export and tests save automatically |
 | 协议匹配 / 需要配置 | Checks declared protocol support only; a mismatch disables connection/tests and links to its setting |
-| 已检测到安装 | A command or configuration directory exists; execution still needs verification |
+| 已检测到安装 | The executable is on PATH. A configuration directory alone is labeled 发现配置目录 |
 | 已配置 · 可恢复 | An original-config backup exists, not an inference result for this model |
 | API 测试通过 | All three protocol checks passed; expand the redacted report for details |
 | 客户端实测通过 | The expected reply was confirmed in a real client's output |
@@ -324,7 +334,7 @@ A connected client keeps the provider and model last written for it. Changing a 
 key or base URL affects the local relay. Do not remove providers still used by clients. Restore
 before switching configuration managers to avoid competing changes.
 
-**Restore:** select the client, click **恢复原配置**, then restart it. The first connection records
+**Restore an automatically configured client:** select the client, click **恢复原配置**, then restart it. The first connection records
 the original content, which remains the backup across reconnections. If the file did not exist
 before connecting, restoration removes the file created by Agent Connect.
 
@@ -379,7 +389,7 @@ app's TOML and advanced CLI's JSON are independent configurations. To update a c
 | Symptom | Check / action |
 | --- | --- |
 | Missing `python3` / `py`, or unsupported version | Install Python 3.11+ and reopen the terminal; on Windows check `python --version` |
-| Missing `start.py` | Use the complete feature branch and enter the extracted/cloned directory; before release, `main` may contain bootstrap files only |
+| Missing `start.py` | Download the default `main` branch and enter the extracted/cloned directory containing the file |
 | Page unavailable / port occupied | Stop the old instance or change both ports; use the full terminal URL if the browser did not open |
 | Management page is unauthorized | Use the URL from this launch; the management token changes after restarting the service |
 | API 401 / 403 | Check key, account and model access; reload after editing the private file |

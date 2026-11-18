@@ -1,5 +1,7 @@
 # Acceptance record
 
+See the [2026-11-18 client setup run](client-setup-acceptance.md) for the eight workbench entries, installed CLI runs and desktop checks.
+
 Date: **2026-11-16 (Asia/Shanghai)**. Candidate: **0.1.0**, independent simple local client.
 
 A dedicated key was supplied through ignored `agent-connect.local.toml`. Real requests went to
