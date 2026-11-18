@@ -27,16 +27,17 @@ _TOKENS = re.compile(_STRING + r"|//[^\r\n]*|/\*[\s\S]*?\*/")
 _TRAILING_COMMA = re.compile(_STRING + r"|,\s*(?=[]}])")
 
 
-def insert_group(text, root, key, model):
+def insert_group(text, root, key, model, protocol):
+    responses = protocol == "responses"
     group = {
         "name": "Agent Connect",
         "vendor": "customendpoint",
-        "apiType": "chat-completions",
+        "apiType": "responses" if responses else "chat-completions",
         "models": [
             {
                 "id": model,
                 "name": model,
-                "url": root + "/v1/chat/completions",
+                "url": root + ("/v1/responses" if responses else "/v1/chat/completions"),
                 # VS Code resolves the provider apiKey via its interactive secret store.
                 # Custom Endpoint supports an explicit auth header for local gateways.
                 "requestHeaders": {"Authorization": "Bearer " + key},
@@ -47,6 +48,8 @@ def insert_group(text, root, key, model):
             }
         ],
     }
+    if responses:
+        group["models"][0]["statefulResponses"] = False
     if not text.strip():
         return json.dumps([group], ensure_ascii=False, indent=2) + "\n"
     sanitized = _TOKENS.sub(lambda m: " " * len(m[0]) if m[0].startswith("/") else m[0], text)

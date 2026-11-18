@@ -9,7 +9,7 @@
 | WorkBuddy | 数组及对象配置、模型白名单、重名冲突、切换和恢复，生成的 URL 完成模拟请求 | 本机未安装桌面版，待在已登录的客户端选择模型并发送消息 |
 | WorkBuddy AI | 国际版独立配置目录，白名单、切换和恢复，生成的 URL 完成模拟请求 | 本机未安装国际版，桌面会话待验收 |
 | Visual Studio | 工作台生成指定服务商的端点、模型及本地令牌，模拟服务验证模型目录和聊天请求 | 需要 Windows 和支持自定义端点的 Visual Studio。模型管理器中的保存、选模、回复待验收 |
-| VS Code 1.141.0 | Custom Endpoint 配置写入、切换、JSONC 注释保留、冲突拒绝、逐字节恢复，生成的端点完成模拟请求 | 真实 IDE 对模拟服务完成单轮回复并恢复，见下文 |
+| VS Code 1.141.0 | Custom Endpoint 配置写入、切换、JSONC 注释保留、冲突拒绝、逐字节恢复，生成的端点完成模拟请求 | 真实 IDE 使用 Chat 对模拟服务完成单轮，使用 Responses 对真实 API 完成单轮，两次均恢复配置 |
 | OpenClaw 2026.10.2 | 连接、默认模型、允许列表和恢复 | 真实 API 单轮通过，15.986 秒 |
 | Hermes 0.23.1 | 连接、提供方与 transport、切换和恢复 | 真实 API 单轮通过，33.345 秒 |
 
@@ -18,6 +18,8 @@
 在 VS Code 1.141.0 的独立桌面窗口中，从磁盘加载机器上安装的 GitHub Copilot Chat 0.69.0。以空用户目录启动，由适配器写入默认 profile，验证模型出现在聊天栏，在本地聊天中发送固定单轮消息。模拟服务实际收到 Chat Completions POST，界面显示了完整预期回复；退出后成功恢复。运行方式见[桌面验证命令](testing.md#reproduce-the-client-setup-checks)。[VS Code 模拟后端回复截图](images/vscode-fixture.png)
 
 首次测试时，IDE 选中了模型，直接写入提供方的 `apiKey` 字段却导致本地网关拒绝了请求。适配器改用 Custom Endpoint 支持的模型级 Authorization 请求头，内容为本地网关令牌。浏览器工作台和文件配置测试均未捕获这个问题，保留了桌面对话回归测试。
+
+对同一个真实模型，VS Code 的 Chat Completions 会话曾收到 HTTP 400，后续一次在等待窗口内没有收到预期回复。对同一端点切换到 Responses 并发送完整历史后，真实桌面收到约定回复并恢复配置。工作台因此在服务商声明支持两个协议时优先选 Responses，仅支持 Chat 时仍使用 Chat Completions。
 
 ## 真实协议测试
 

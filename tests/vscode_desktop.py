@@ -23,7 +23,7 @@ from .fixtures import TEXT, stack
 @contextmanager
 def backend(settings):
     if settings is None:
-        with stack() as (config, vendor, _):
+        with stack(chat_only=True) as (config, vendor, _):
             yield config, "iteracompute"
             assert any(r[0] == "POST" and r[1] == "/v1/chat/completions" for r in vendor.requests)
         return

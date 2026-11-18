@@ -100,7 +100,7 @@ function updateAvailability() {
   $("workspace").setAttribute("aria-busy", String(working));
   if (!state || working) return;
   const client = state.clients.find((c) => c.id === selectedClient);
-  const matched = selectedProtocols().includes(client.protocol);
+  const matched = client.protocols.some((p) => selectedProtocols().includes(p));
   ["connect", "probe", "smoke", "export"].forEach((id) => {
     $(id).disabled = !matched;
   });
@@ -212,7 +212,8 @@ function updatePath() {
   const p = state.settings.providers[$("provider").value];
   const client = state.clients.find((c) => c.id === selectedClient);
   const currentProtocols = selectedProtocols();
-  const matched = currentProtocols.includes(client.protocol);
+  const protocol = client.protocols.find((p) => currentProtocols.includes(p));
+  const matched = Boolean(protocol);
   const keyEntered = Boolean($("api-key").value.trim());
   $("key-status").textContent = keyEntered
     ? "待保存"
@@ -232,13 +233,14 @@ function updatePath() {
   $("connect-label").textContent = client.guided
     ? "获取 Visual Studio 接入信息"
     : "连接 " + client.name;
-  $("required-protocol").textContent = protocols[client.protocol];
+  $("required-protocol").textContent =
+    protocols[protocol || client.protocols[0]];
   $("protocol-match").textContent = matched ? "协议匹配" : "需要配置";
   $("protocol-match").classList.toggle("missing", !matched);
   $("protocol-summary").textContent = `${currentProtocols.length} 种协议`;
   $("compatibility").hidden = matched;
   $("compatibility-text").textContent =
-    `此客户端需要 ${protocols[client.protocol]}。请确认 API 支持后，在地址与协议中勾选。`;
+    `此客户端支持 ${client.protocols.map((p) => protocols[p]).join(" 或 ")}。请确认 API 支持后，在地址与协议中勾选。`;
   $("connection-status").textContent = client.connected
     ? "此软件有备份"
     : client.guided

@@ -47,7 +47,8 @@ On stable desktop VS Code, the adapter adds a Custom Endpoint to `chatLanguageMo
 `$XDG_CONFIG_HOME/Code/User` (Linux, default `~/.config/Code/User`). Set
 `ITERACONNECT_VSCODE_USER_DIR` for a named profile or nonstandard user directory. JSONC comments,
 trailing commas and existing groups are preserved. VS Code uses a model-level Authorization header
-carrying the loopback relay token. The generated chat profile enables tools, disables vision and
+carrying the loopback relay token. When available, Responses sends full history on each turn.
+For a Chat-only provider, the adapter selects Chat Completions. The generated chat profile enables tools, disables vision and
 uses local budgets of 16,384 input tokens and 2,048 output tokens. Visual Studio on Windows uses the IDE's model
 manager and displays per-field copy buttons in the workbench.
 Original contents and the installed content hash are journaled under `native-backups` in the

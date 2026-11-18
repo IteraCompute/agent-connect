@@ -168,14 +168,15 @@ def yaml_put(text, path, value, remove=False):
 def render_native(target, text, config, pid, model):
     if target not in CLIENTS or CLIENTS[target].guided:
         raise ConnectError("此客户端使用应用内引导接入。")
-    protocol = CLIENTS[target].protocol
-    if protocol not in config["providers"][pid]["endpoints"]:
+    endpoints = config["providers"][pid]["endpoints"]
+    protocol = CLIENTS[target].select_protocol(endpoints)
+    if protocol not in endpoints:
         raise ConnectError(
             f"当前 API 缺少 {protocol} 协议。请选择支持它的 API，或使用高级协议适配。"
         )
     root, key = gateway_url(config, pid), gateway_key()
     if target == "vscode":
-        return insert_group(text, root, key, model)
+        return insert_group(text, root, key, model, protocol)
     if target == "codex":
         return edit_codex(text, root, key, model)
     if target == "hermes":

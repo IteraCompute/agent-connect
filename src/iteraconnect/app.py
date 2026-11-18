@@ -77,7 +77,8 @@ class App(ThreadingHTTPServer):
         return {
             "id": target,
             "name": client.name,
-            "protocol": client.protocol,
+            "protocol": client.protocols[0],
+            "protocols": client.protocols,
             "guided": client.guided,
             "manual_test": client.manual_test,
             "next_step": client.next_step,
@@ -176,7 +177,7 @@ class App(ThreadingHTTPServer):
                 }
             return connect_native(target, self.config, pid, p["model"])
         if route == "/api/probe":
-            protocol = CLIENTS[target].protocol
+            protocol = CLIENTS[target].select_protocol(p["protocols"])
             if protocol not in p["protocols"]:
                 raise ConnectError(f"此客户端需要 {protocol} 协议，当前 API 未配置。")
             return probe(self.config, pid, protocols=[protocol], budget=256)

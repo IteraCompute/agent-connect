@@ -490,12 +490,14 @@ class ControlPanelTests(unittest.TestCase):
             group = json.loads(client_path("vscode").read_text())[0]
             entry = group["models"][0]
             self.assertEqual(entry["id"], "owner/model")
+            self.assertEqual(group["apiType"], "responses")
+            self.assertFalse(entry["statefulResponses"])
             self.assertTrue(entry["toolCalling"])
             self.assertFalse(entry["vision"])
             self.assertGreater(entry["maxInputTokens"], entry["maxOutputTokens"])
             self.assertEqual(
                 group["models"][0]["url"],
-                f"http://127.0.0.1:{self.app.relay.server_port}/p/iteracompute/v1/chat/completions",
+                f"http://127.0.0.1:{self.app.relay.server_port}/p/iteracompute/v1/responses",
             )
             settings = self.app.settings_path.read_bytes()
             self.assertEqual(self.call("/api/disconnect", {"client": "codex"})[0], 200)

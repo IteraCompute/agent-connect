@@ -171,7 +171,7 @@ not implement a model catalog, type the model ID it documents instead.
 | API type | Example base | Protocol | Directly supported clients |
 | --- | --- | --- | --- |
 | OpenAI Chat compatible | `https://api.example.com/v1` | `chat` | WorkBuddy, WorkBuddy AI, VS Code, Visual Studio, OpenClaw, Hermes |
-| OpenAI Responses compatible | `https://api.example.com/v1` | `responses` | Codex |
+| OpenAI Responses compatible | `https://api.example.com/v1` | `responses` | Codex CLI, VS Code |
 | Anthropic Messages compatible | `https://api.example.com` | `anthropic` | Claude Code |
 | Multiple native protocols | Vendor's documented base | Only protocols it actually serves | Clients requiring those protocols |
 | Local OpenAI-compatible server | `http://127.0.0.1:PORT/v1` | As supported by the server | Clients requiring those protocols |
@@ -211,7 +211,7 @@ to be entered in the client: it receives a local relay credential, and Agent Con
 | WorkBuddy | OpenAI Chat Completions | `~/.workbuddy/models.json` |
 | WorkBuddy AI | OpenAI Chat Completions | `~/.workbuddy-ai/models.json` |
 | Visual Studio (Windows) | OpenAI Chat Completions | Copilot Chat → Manage Models → Add a model |
-| VS Code (stable desktop) | OpenAI Chat Completions | User profile’s `chatLanguageModels.json` |
+| VS Code (stable desktop) | OpenAI Responses preferred, or Chat Completions | User profile’s `chatLanguageModels.json` |
 | OpenClaw | OpenAI Chat Completions | `~/.openclaw/openclaw.json` |
 | Hermes | OpenAI Chat Completions | `~/.hermes/config.yaml` |
 
@@ -250,7 +250,7 @@ Select **获取 Visual Studio 接入信息**. In Visual Studio 2026 18.10 or lat
 
 ### VS Code
 
-Run Agent Connect on the same machine as stable desktop VS Code with the Copilot Chat Custom Endpoint provider. Select **连接 VS Code**, reload the window and select the model under Agent Connect in a new local chat. The adapter targets the default profile. For a named or portable profile, set `ITERACONNECT_VSCODE_USER_DIR` to the directory containing that profile’s `chatLanguageModels.json` before launching the workbench. [VS Code model configuration](https://code.visualstudio.com/docs/agent-customization/language-models)
+Run Agent Connect on the same machine as stable desktop VS Code with the Copilot Chat Custom Endpoint provider. The workbench prefers Responses when advertised and uses Chat Completions for Chat-only APIs. Select **连接 VS Code**, reload the window and select the model under Agent Connect in a new local chat. The adapter targets the default profile. For a named or portable profile, set `ITERACONNECT_VSCODE_USER_DIR` to the directory containing that profile’s `chatLanguageModels.json` before launching the workbench. [VS Code model configuration](https://code.visualstudio.com/docs/agent-customization/language-models)
 
 ### OpenClaw
 

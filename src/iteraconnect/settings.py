@@ -15,42 +15,47 @@ from .config import DEFAULT, ConnectError, private_write, validate, validate_url
 
 class Client(NamedTuple):
     name: str
-    protocol: str
+    protocols: tuple[str, ...]
     next_step: str
     manual_test: bool = False
     guided: bool = False
 
+    def select_protocol(self, available):
+        return next((p for p in self.protocols if p in available), self.protocols[0])
+
 
 CLIENTS = {
-    "claude": Client("Claude Code", "anthropic", "在新终端启动 claude，开始新会话。"),
-    "codex": Client("Codex CLI", "responses", "在新终端启动 codex，开始新会话。"),
+    "claude": Client("Claude Code", ("anthropic",), "在新终端启动 claude，开始新会话。"),
+    "codex": Client("Codex CLI", ("responses",), "在新终端启动 codex，开始新会话。"),
     "workbuddy": Client(
         "WorkBuddy",
-        "chat",
+        ("chat",),
         "重启 WorkBuddy，新建任务，在模型菜单选择 custom-local:{provider}/{model}。",
         manual_test=True,
     ),
     "workbuddy-ai": Client(
         "WorkBuddy AI",
-        "chat",
+        ("chat",),
         "重启 WorkBuddy AI，新建任务，在模型菜单选择 custom-local:{provider}/{model}。",
         manual_test=True,
     ),
     "visual-studio": Client(
         "Visual Studio",
-        "chat",
+        ("chat",),
         "在 Windows 的 Visual Studio 2026 中打开 Copilot Chat → 管理模型，添加自定义端点。",
         manual_test=True,
         guided=True,
     ),
     "vscode": Client(
         "VS Code",
-        "chat",
+        ("responses", "chat"),
         "在 VS Code 中启用 Copilot Chat 并重新加载窗口，在本地聊天中选择 Agent Connect 下的 {model}。",
         manual_test=True,
     ),
-    "openclaw": Client("OpenClaw", "chat", "重启 OpenClaw，在新会话中使用默认模型。"),
-    "hermes": Client("Hermes", "chat", "重启 Hermes，在新会话中使用 custom:iteraconnect 提供方。"),
+    "openclaw": Client("OpenClaw", ("chat",), "重启 OpenClaw，在新会话中使用默认模型。"),
+    "hermes": Client(
+        "Hermes", ("chat",), "重启 Hermes，在新会话中使用 custom:iteraconnect 提供方。"
+    ),
 }
 APP_DEFAULT = {
     "selected_provider": "iteracompute",

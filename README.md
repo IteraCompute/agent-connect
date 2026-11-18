@@ -131,7 +131,7 @@ protocols = ["chat", "responses", "anthropic"]
 | API 类型 | 地址示例 | 勾选的协议 | 可直接接入的客户端 |
 | --- | --- | --- | --- |
 | OpenAI Chat 兼容 | `https://api.example.com/v1` | `chat` | WorkBuddy、WorkBuddy AI、VS Code、Visual Studio、OpenClaw、Hermes |
-| OpenAI Responses 兼容 | `https://api.example.com/v1` | `responses` | Codex |
+| OpenAI Responses 兼容 | `https://api.example.com/v1` | `responses` | Codex CLI、VS Code |
 | Anthropic Messages 兼容 | `https://api.example.com` | `anthropic` | Claude Code |
 | 同时提供多个原生协议 | 供应商的 API 基地址 | 只勾选实际提供的协议 | 对应协议的客户端 |
 | 本地 OpenAI 兼容服务 | `http://127.0.0.1:你的端口/v1` | 按服务能力勾选 | 对应协议的客户端 |
@@ -165,7 +165,7 @@ anthropic = "https://api.example.com/anthropic"
 | WorkBuddy | OpenAI Chat Completions | `~/.workbuddy/models.json` |
 | WorkBuddy AI | OpenAI Chat Completions | `~/.workbuddy-ai/models.json` |
 | Visual Studio（Windows） | OpenAI Chat Completions | Copilot Chat → 管理模型 → 添加模型 |
-| VS Code（桌面稳定版） | OpenAI Chat Completions | 用户配置目录下的 `chatLanguageModels.json` |
+| VS Code（桌面稳定版） | 优先 OpenAI Responses，也支持 Chat Completions | 用户配置目录下的 `chatLanguageModels.json` |
 | OpenClaw | OpenAI Chat Completions | `~/.openclaw/openclaw.json` |
 | Hermes | OpenAI Chat Completions | `~/.hermes/config.yaml` |
 
@@ -197,7 +197,7 @@ anthropic = "https://api.example.com/anthropic"
 
 ### VS Code
 
-在与 Agent Connect 同一台设备上的 VS Code 桌面稳定版使用 Copilot Chat 的 Custom Endpoint。点击 **连接 VS Code**，重新加载窗口，在本地聊天的模型菜单中选择 Agent Connect 下的目标模型。默认写入默认配置文件（profile）。使用命名配置文件或便携版时，把 `ITERACONNECT_VSCODE_USER_DIR` 指向该配置文件中存放 `chatLanguageModels.json` 的目录，再启动工作台。[VS Code 模型设置](https://code.visualstudio.com/docs/agent-customization/language-models)
+在与 Agent Connect 同一台设备上的 VS Code 桌面稳定版使用 Copilot Chat 的 Custom Endpoint。服务商声明支持 Responses 时工作台优先使用它，只提供 Chat 时自动配置 Chat Completions。点击 **连接 VS Code**，重新加载窗口，在本地聊天的模型菜单中选择 Agent Connect 下的目标模型。默认写入默认配置文件（profile）。使用命名配置文件或便携版时，把 `ITERACONNECT_VSCODE_USER_DIR` 指向该配置文件中存放 `chatLanguageModels.json` 的目录，再启动工作台。[VS Code 模型设置](https://code.visualstudio.com/docs/agent-customization/language-models)
 
 ### OpenClaw
 

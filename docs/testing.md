@@ -79,7 +79,7 @@ xvfb-run -a python -m tests.vscode_desktop
 xvfb-run -a python -m tests.vscode_desktop --settings agent-connect.local.toml
 ```
 
-The first command runs against the local vendor fixture. The second incurs API usage on the
+The first command uses a Chat-only local vendor fixture. The second incurs API usage on the
 explicitly selected provider and model. To capture a fixture-only screenshot, add
 `--screenshot reports/vscode-fixture.png` to the first command.
 
