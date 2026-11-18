@@ -82,7 +82,7 @@ class MagpieTests(unittest.TestCase):
                 break
             except Exception:
                 if cls.process.poll() is not None:
-                    raise AssertionError("Magpie failed to start in sandbox")
+                    raise AssertionError("Magpie failed to start in sandbox") from None
                 time.sleep(0.1)
         else:
             raise AssertionError("Magpie did not become ready")

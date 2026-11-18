@@ -31,4 +31,35 @@ target-version = "py311"
 line-length = 100
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "I"]
+select = ["B", "E4", "E7", "E9", "F", "I", "PGH003", "PGH004", "RUF100"]
+
+[tool.mypy]
+files = ["src/iteraconnect"]
+python_version = "3.11"
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+
+[[tool.mypy.overrides]]
+module = "iteraconnect.config"
+disallow_untyped_defs = true
+disallow_any_generics = true
+warn_return_any = true
+
+[tool.importlinter]
+root_package = "iteraconnect"
+
+[[tool.importlinter.contracts]]
+name = "Runtime dependencies point from entry points toward configuration"
+type = "layers"
+containers = ["iteraconnect"]
+exhaustive = true
+layers = [
+    "__main__",
+    "cli",
+    "app",
+    "smoke",
+    "diagnostics | gateway | integrations | launch | native",
+    "network | settings",
+    "config",
+]

@@ -122,6 +122,41 @@ class NativeEditorTests(unittest.TestCase):
                     disconnect_native(target, home, home / "backups")
                     self.assertEqual(path.read_text(), original)
 
+    def test_restore_after_journal_write_but_before_config_replacement(self):
+        from iteraconnect.config import private_write
+
+        for original in (None, b'{"theme":"dark"}\r\n'):
+            for reconnect in (False, True):
+                with (
+                    self.subTest(existing=original is not None, reconnect=reconnect),
+                    tempfile.TemporaryDirectory() as directory,
+                ):
+                    home = Path(directory)
+                    backups = home / "backups"
+                    path = client_path("claude", home).resolve()
+                    if original is not None:
+                        private_write(path, original)
+                    if reconnect:
+                        connect_native("claude", DEFAULT, "iteracompute", MODEL, home, backups)
+
+                    def interrupt_config_write(destination, content, config_path=path):
+                        if destination == config_path:
+                            raise OSError("simulated interruption")
+                        private_write(destination, content)
+
+                    with (
+                        patch(
+                            "iteraconnect.native.private_write", side_effect=interrupt_config_write
+                        ),
+                        self.assertRaises(OSError),
+                    ):
+                        connect_native(
+                            "claude", DEFAULT, "iteracompute", MODEL + "-new", home, backups
+                        )
+                    disconnect_native("claude", home, backups)
+                    self.assertEqual(path.read_bytes() if path.exists() else None, original)
+                    self.assertFalse((backups / "claude.json").exists())
+
     def test_restoring_a_new_file_removes_it_and_later_edits_are_protected(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)

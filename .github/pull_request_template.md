@@ -1,9 +1,9 @@
 Describe the behavior change and why it is needed.
 
-Validation:
+- Report the verification command and result. For user-facing changes, include the
+  operation you exercised and its observed outcome.
+- Identify the evidence used (fixture, configuration adapter or actual provider/client).
+  Include relevant client/protocol/model versions and any skipped checks.
+- For a release, identify the commit and CI artifact containing the tested wheel and sdist.
 
-- Commands/results, with simulated and real-provider evidence distinguished.
-- Client/protocol/model versions if relevant.
-- Remaining limitations or required manual checks.
-
-Do not include keys or unredacted private logs. An administrator code-owner review is required.
+Keep keys and private logs out of the PR. An independent administrator reviews the change.

@@ -9,7 +9,7 @@ import re
 import tomllib
 from pathlib import Path
 
-from .config import DEFAULT, ConnectError, private_write, validate, validate_url
+from .config import DEFAULT, ConnectError, RuntimeConfig, private_write, validate, validate_url
 
 CLIENTS = {
     "claude": ("Claude Code", "anthropic"),
@@ -97,7 +97,7 @@ def read_settings(path: Path):
         raise ConnectError("无法读取本地 TOML 配置，请检查引号；错误内容不会显示密钥。") from None
 
 
-def runtime_config(data, port=18423):
+def runtime_config(data, port: int = 18423) -> RuntimeConfig:
     """The app exclusively uses this private file, never an unrelated inherited vendor key."""
     config = copy.deepcopy(DEFAULT)
     config["active_provider"] = data["selected_provider"]
