@@ -13,11 +13,48 @@ Tests deliberately distinguish three kinds of evidence:
 
 ```bash
 python -m pip install -e . -r requirements-dev.txt
-python -m unittest discover -v
-ruff check .
-ruff format --check .
-python -m build
+python scripts/verify.py
 ```
+
+Run these commands from an activated Python 3.11+ virtual environment. The verifier runs
+Ruff, mypy across the runtime (including unannotated function bodies), and the import layers
+declared in `pyproject.toml`. New runtime modules must fit a layer. The configuration boundary
+requires typed function signatures. A test scans static imports for the standard-library-only
+runtime contract, including imports inside functions.
+
+The verifier then runs `python -m build`, installs the wheel built from the sdist into a fresh
+environment, initializes a disposable CLI profile and reads it back. It runs unittest discovery
+against that installation, including the loopback control panel, packaged web assets, fixture
+provider probes and client config restoration. For a shorter edit cycle, run
+`python -m unittest discover -v` against the editable installation.
+
+### Native configuration recovery model
+
+The TLA+ model covers one client file, an initial connection, reconnections, an interruption
+between journaling and replacing the file, and a later external edit with a distinct digest.
+TLC checks that the original image survives reconnection, a restore is enabled after an
+interrupted write, and the adapter preserves that external edit. The model assumes serialized
+operations and atomic single-file replacement. Concurrent external writers, interruptions
+during disconnect, and filesystem durability are outside its scope. The Python regression in
+`NativeEditorTests` injects a write failure into the real adapter and checks exact recovery for
+both existing and absent files.
+
+CI runs the model on every PR. To reproduce this locally, install Java 11+ and download
+`tla2tools.jar` from the pinned release. Run
+`python scripts/verify.py --tlc-jar /path/to/tla2tools.jar`. The verifier checks its SHA-256
+before execution. [TLC release](https://github.com/tlaplus/tlaplus/releases/tag/v1.7.4) ·
+[Model and properties](../verification/NativeJournal.tla)
+
+### Release handoff
+
+Each successful quality job archives the exact sdist and wheel it tested, under
+`agent-connect-<commit SHA>-<run attempt>` in GitHub Actions. For release, use the artifact from the
+successful **push to protected main** for the reviewed commit. Check the commit SHA and
+aggregate `checks` result before using that artifact. The PR run is available for review.
+A local rehearsal can retain both artifacts in a new directory with
+`python scripts/verify.py --tlc-jar /path/to/tla2tools.jar --dist-dir dist/candidate`.
+
+### Optional native and Magpie checks
 
 For the actual Magpie engine, install the pinned binary, then set
 `ITERACONNECT_TEST_MAGPIE_BIN` to its absolute path:

@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qsl, unquote, urlsplit
 
 from . import __version__
-from .config import ConnectError, api_key, gateway_key
+from .config import ConnectError, ProviderConfig, RuntimeConfig, api_key, gateway_key
 from .network import MAX_JSON, json_request, request
 
 # Explicit inference routes keep provider administration APIs unreachable.
@@ -26,7 +26,7 @@ ROUTES = {
 }
 
 
-def provider_models(provider: dict, timeout=20) -> list[dict]:
+def provider_models(provider: ProviderConfig, timeout=20) -> list[dict]:
     endpoints = provider["endpoints"]
     if base := endpoints.get("chat") or endpoints.get("responses"):
         url = base + "/models"
@@ -48,7 +48,7 @@ class Gateway(ThreadingHTTPServer):
     daemon_threads = True
     block_on_close = False
 
-    def __init__(self, config: dict, key: str | None = None, address=None):
+    def __init__(self, config: RuntimeConfig, key: str | None = None, address=None):
         self.config = config
         self.key = key or gateway_key()
         self.slots = threading.BoundedSemaphore(64)
@@ -183,11 +183,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def relay(self):
         pid, path = self.split_route()
-        route = ROUTES.get(path)
         gemini = re.fullmatch(
             r"/v1beta/models/([^:]+):(generateContent|streamGenerateContent)", path
         )
-        if not route and not gemini:
+        if path not in ROUTES and not gemini:
             self.fail(404, "Inference route not found")
             return
         if self.headers.get("Transfer-Encoding"):
@@ -220,7 +219,7 @@ class Handler(BaseHTTPRequestHandler):
             pid, model = prefix, rest
         pid = pid or self.server.config["active_provider"]
         provider = providers[pid]
-        protocol, suffix = ("gemini", f"/models/{model}:{gemini[2]}") if gemini else route
+        protocol, suffix = ("gemini", f"/models/{model}:{gemini[2]}") if gemini else ROUTES[path]
         suffix += self.inference_query
         if protocol not in provider["endpoints"]:
             self.fail(

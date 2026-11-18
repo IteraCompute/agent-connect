@@ -12,13 +12,19 @@ from .config import ConnectError
 MAX_JSON = 16 * 1024 * 1024
 
 
-def request(method: str, url: str, headers: dict, body: bytes | None = None, timeout=180):
+def request(
+    method: str, url: str, headers: dict[str, str], body: bytes | None = None, timeout: float = 180
+) -> tuple[http.client.HTTPConnection, http.client.HTTPResponse]:
     p = urlsplit(url)
-    cls = http.client.HTTPSConnection if p.scheme == "https" else http.client.HTTPConnection
-    options = {"timeout": timeout}
+    if not p.hostname:
+        raise ConnectError("Upstream URL requires a host")
+    conn: http.client.HTTPConnection
     if p.scheme == "https":
-        options["context"] = ssl.create_default_context()
-    conn = cls(p.hostname, p.port, **options)
+        conn = http.client.HTTPSConnection(
+            p.hostname, p.port, timeout=timeout, context=ssl.create_default_context()
+        )
+    else:
+        conn = http.client.HTTPConnection(p.hostname, p.port, timeout=timeout)
     path = p.path or "/"
     if p.query:
         path += "?" + p.query

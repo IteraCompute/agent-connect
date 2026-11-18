@@ -7,10 +7,10 @@ import os
 import shutil
 import subprocess
 
-from .config import ConnectError, api_key, gateway_key, gateway_url
+from .config import ConnectError, RuntimeConfig, api_key, gateway_key, gateway_url
 
 
-def launch_args(config: dict, target: str, pid: str, model=None, via="gateway", args=()):
+def launch_args(config: RuntimeConfig, target: str, pid: str, model=None, via="gateway", args=()):
     p = config["providers"][pid]
     selected = model or p["default_model"]
     protocol = {"claude": "anthropic", "codex": "responses"}.get(target)

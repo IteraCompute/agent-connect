@@ -10,10 +10,34 @@ import re
 import secrets
 import tempfile
 from pathlib import Path
+from typing import NotRequired, TypedDict
 from urllib.parse import urlsplit
 
 PROTOCOLS = ("chat", "responses", "anthropic", "gemini")
-DEFAULT = {
+
+
+class ProviderConfig(TypedDict):
+    name: str
+    key_env: str
+    default_model: str
+    endpoints: dict[str, str]
+    allow_http: NotRequired[bool]
+
+
+class GatewayConfig(TypedDict):
+    host: str
+    port: int
+    timeout: float
+
+
+class RuntimeConfig(TypedDict):
+    schema_version: int
+    active_provider: str
+    gateway: GatewayConfig
+    providers: dict[str, ProviderConfig]
+
+
+DEFAULT: RuntimeConfig = {
     "schema_version": 1,
     "active_provider": "iteracompute",
     "gateway": {"host": "127.0.0.1", "port": 18423, "timeout": 180},
@@ -81,7 +105,7 @@ def validate_url(value: str, allow_http: bool = False) -> str:
     return value.rstrip("/")
 
 
-def validate(data: dict) -> dict:
+def validate(data: RuntimeConfig) -> RuntimeConfig:
     try:
         if data["schema_version"] != 1 or not data["providers"]:
             raise ValueError
@@ -122,7 +146,7 @@ def validate(data: dict) -> dict:
     return data
 
 
-def load(path: Path | None = None) -> dict:
+def load(path: Path | None = None) -> RuntimeConfig:
     path = path or state_dir() / "config.json"
     if not path.exists():
         return copy.deepcopy(DEFAULT)
@@ -132,7 +156,7 @@ def load(path: Path | None = None) -> dict:
         raise ConnectError("Invalid configuration JSON") from None
 
 
-def save(data: dict, path: Path | None = None) -> None:
+def save(data: RuntimeConfig, path: Path | None = None) -> None:
     private_write(path or state_dir() / "config.json", json.dumps(validate(data), indent=2) + "\n")
 
 
@@ -152,7 +176,7 @@ def gateway_key() -> str:
         if len(value) < 24:
             raise ConnectError(
                 "Invalid gateway.key; restore it or remove it to create a new local key"
-            )
+            ) from None
         return value
     value = "ic-" + secrets.token_urlsafe(32)
     with os.fdopen(fd, "w") as f:
@@ -160,7 +184,7 @@ def gateway_key() -> str:
     return value
 
 
-def api_key(provider: dict, required: bool = True) -> str:
+def api_key(provider: ProviderConfig, required: bool = True) -> str:
     value = os.environ.get(provider["key_env"], "")
     if required and not value:
         raise ConnectError(f"Set {provider['key_env']} in the gateway process environment")
@@ -169,6 +193,6 @@ def api_key(provider: dict, required: bool = True) -> str:
     return value
 
 
-def gateway_url(config: dict, pid: str | None = None) -> str:
+def gateway_url(config: RuntimeConfig, pid: str | None = None) -> str:
     base = f"http://127.0.0.1:{config['gateway']['port']}"
     return base + (f"/p/{pid}" if pid else "")

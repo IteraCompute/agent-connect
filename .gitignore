@@ -11,3 +11,5 @@ dist/
 reports/
 .ruff_cache/
 agent-connect.local.toml
+.mypy_cache/
+.import_linter_cache/

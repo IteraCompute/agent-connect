@@ -13,7 +13,7 @@ import urllib.request
 from pathlib import Path
 from urllib.parse import urlencode
 
-from .config import ConnectError, gateway_key, gateway_url, private_write, state_dir
+from .config import ConnectError, RuntimeConfig, gateway_key, gateway_url, private_write, state_dir
 from .network import json_request
 
 CC_FORMATS = {
@@ -126,7 +126,7 @@ def magpie_providers() -> dict:
         ) from None
 
 
-def sync_magpie(config: dict) -> list[str]:
+def sync_magpie(config: RuntimeConfig) -> list[str]:
     base = gateway_url(config)
     hello = json_request("GET", base + "/health", timeout=3)
     if hello.get("name") != "iteraconnect":
@@ -169,7 +169,7 @@ def sync_magpie(config: dict) -> list[str]:
     return synced
 
 
-def connect(config: dict, target: str, pid: str, model: str | None = None):
+def connect(config: RuntimeConfig, target: str, pid: str, model: str | None = None):
     vendor_env_names = [p["key_env"] for p in config["providers"].values()]
     # WorkBuddy selects a model per task; its adapter connects a provider/picker, not a default model.
     if target in ("workbuddy", "workbuddy-ai"):
@@ -183,7 +183,9 @@ def connect(config: dict, target: str, pid: str, model: str | None = None):
         )
 
 
-def cc_link(config: dict, target: str, pid: str, model=None, api_format=None, via="gateway") -> str:
+def cc_link(
+    config: RuntimeConfig, target: str, pid: str, model=None, api_format=None, via="gateway"
+) -> str:
     if target not in CC_FORMATS:
         raise ConnectError("This client has no CC Switch provider import; use: connect <client>")
     fmt = api_format or CC_FORMATS[target]
@@ -226,7 +228,7 @@ def cc_link(config: dict, target: str, pid: str, model=None, api_format=None, vi
     )
 
 
-def export_fragment(config: dict, target: str, pid: str, model=None) -> str:
+def export_fragment(config: RuntimeConfig, target: str, pid: str, model=None) -> str:
     """Standalone fragments for manual merging; never overwrite native config files."""
     root, key = gateway_url(config, pid), gateway_key()
     p = config["providers"][pid]
@@ -240,6 +242,7 @@ def export_fragment(config: dict, target: str, pid: str, model=None) -> str:
             f'base_url = {json.dumps(root + "/v1")}\nenv_key = "ITERACONNECT_GATEWAY_KEY"\n'
             'wire_api = "responses"\nrequires_openai_auth = false\nsupports_websockets = false\n'
         )
+    value: dict[str, object] | list[dict[str, object]]
     if target == "claude":
         if "anthropic" not in p["endpoints"]:
             raise ConnectError("Claude Code needs Messages; connect through Magpie for translation")

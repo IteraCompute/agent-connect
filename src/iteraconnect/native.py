@@ -173,7 +173,7 @@ def render_native(target, text, config, pid, model):
         return edit_codex(text, root, key, model)
     if target == "hermes":
         # Stale explicit model routes and key commands can override a newly selected named provider.
-        removals = [
+        removals: list[tuple[str, ...]] = [
             ("model", key)
             for key in ("base_url", "api", "api_key", "api_mode", "key_env", "api_key_env")
         ]
@@ -209,14 +209,14 @@ def render_native(target, text, config, pid, model):
             raise ConnectError("Hermes YAML 包含文档指令，请使用手动导出。")
         for path in removals:
             text = yaml_put(text, path, None, remove=True)
-        for path, value in (
-            (["model", "provider"], "custom:iteraconnect"),
-            (["model", "default"], model),
-            (["providers", "iteraconnect", "base_url"], root + "/v1"),
-            (["providers", "iteraconnect", "api_key"], key),
-            (["providers", "iteraconnect", "transport"], "chat_completions"),
+        for path, setting in (
+            (("model", "provider"), "custom:iteraconnect"),
+            (("model", "default"), model),
+            (("providers", "iteraconnect", "base_url"), root + "/v1"),
+            (("providers", "iteraconnect", "api_key"), key),
+            (("providers", "iteraconnect", "transport"), "chat_completions"),
         ):
-            text = yaml_put(text, path, value)
+            text = yaml_put(text, path, setting)
         return text
     try:
         value = (
@@ -243,6 +243,8 @@ def render_native(target, text, config, pid, model):
                 value["models"] = models
             else:
                 value = models
+        elif not isinstance(value, dict):
+            raise ValueError
         elif target == "claude":
             # Explicitly neutralize competing API-key and cloud-provider settings at this scope.
             merge_dict(
